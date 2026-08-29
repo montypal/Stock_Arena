@@ -1,0 +1,120 @@
+:root {
+  --ground: #f3f5f8;
+  --surface: #fff;
+  --ink: #121a24;
+  --ink-soft: #4b5a6b;
+  --ink-faint: #8494a6;
+  --rule: #d9e1e9;
+  --accent: #1b45e0;
+  --ok: #0e7c5a;
+  --bad: #be3a28;
+  --wait: #b96c00;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #0c1118;
+    --surface: #141b25;
+    --ink: #e7edf4;
+    --ink-soft: #9dacbe;
+    --ink-faint: #6c7c91;
+    --rule: #253040;
+    --accent: #7c9bff;
+    --ok: #3fc08d;
+    --bad: #f07a69;
+    --wait: #efac46;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 64px 24px 80px;
+}
+
+.eyebrow {
+  font: 600 11px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 14px;
+}
+
+h1 {
+  font-size: 34px;
+  letter-spacing: -.02em;
+  margin: 0 0 12px;
+}
+
+.lede { color: var(--ink-soft); margin: 0 0 32px; }
+
+.status {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin-bottom: 28px;
+}
+.status .dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  margin-top: 7px;
+  flex: none;
+}
+.status.ok .dot { background: var(--ok); }
+.status.bad .dot { background: var(--bad); }
+.status.wait .dot { background: var(--wait); }
+.status .msg { color: var(--ink-faint); font-size: 13px; margin-top: 4px; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  overflow: hidden;
+}
+th, td {
+  text-align: left;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14px;
+}
+tbody tr:last-child td { border-bottom: none; }
+th {
+  font: 600 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.num { text-align: right; font-variant-numeric: tabular-nums; font-family: ui-monospace, Menlo, monospace; }
+.sym { font-weight: 600; }
+.when { color: var(--ink-faint); font-size: 13px; }
+
+footer {
+  margin-top: 36px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+code {
+  font-family: ui-monospace, Menlo, monospace;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12px;
+}
