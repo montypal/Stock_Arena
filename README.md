@@ -1,6 +1,28 @@
+<p align="center">
+  <img src="assets/stockarena.png" alt="StockArena logo" width="320" />
+</p>
+
 # StockArena
 
-A stock-picking competition. Real market prices, fake money, no real trades.
+**A weekly stock-picking competition. Real market prices, fake money, no real trades.**
+
+StockArena is a game where players compete against each other by investing fake money into real stocks. Each league lasts one full week, from Monday through Sunday. Players receive a set amount of virtual money when they join a league, use it to buy stocks and build a portfolio, and watch its value move with the real market throughout the week.
+
+Players also earn achievements during the week, which pay out additional virtual money directly into their portfolio — a second way to grow their balance beyond the market itself. At the end of Sunday, the player whose portfolio has made the most money wins the league.
+
+## How a league week works
+
+- **Monday — League Begins.** Players receive their starting balance (Bronze $10,000 · Silver $25,000 · Gold $50,000 · higher leagues more) and buy stocks. The first achievements become available immediately.
+- **Tuesday–Thursday — Watch Your Portfolio.** Players track portfolio value, profit and loss, per-stock performance, league position, and the gap to the players above and below. Achievements unlock and pay cash into the available balance.
+- **Friday — Final Trade Opportunity.** One last chance to sell and rebuy — then the portfolio is locked.
+- **Saturday–Sunday — Final Stretch.** No trading, but achievements can still be earned.
+- **Sunday — League Ends.** Final portfolio value, including all achievement money, decides the winner.
+
+## Leagues and achievements
+
+- **Random leagues** match you against automatically selected players; **private leagues** let friends set their own name, players, starting balance, schedule, and achievement settings.
+- **Weekly achievements** (First Buy, Diversified, Comeback, Clean Sweep, Conviction, …) pay virtual money into the current league, so a player behind on the market can still climb.
+- **Career achievements** (First Win, Three-Peat, Perfect Week, …) pay coins to your profile. Coins unlock higher leagues, extra private leagues, and customization — and are never spendable inside a league, so veterans never start a week richer than new players.
 
 ## Shape of the system
 

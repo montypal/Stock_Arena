@@ -146,6 +146,12 @@ Restructured `contextHistory.md` into the shared-memory format: a "How This File
 
 ---
 
+Jackson OpenCode 4:48 PM 9/13/26
+
+Added the StockArena logo to the project (`assets/stockarena.png`, copied from `stockarena.png` in Downloads, ~1.1 MB) and rewrote `README.md` as a description of the app: centered logo header, what StockArena is, how a league week works, leagues and achievements, the worker → Postgres → web system diagram, layout, run/deploy notes. Preserved the collaborator's `Making changes` section verbatim, including their local-path wording. Pulled `origin/main` before editing, which fast-forwarded the friend's merge commit (`a6d8b78`, README `Making changes` section) with no conflicts. Logo is committed with the project so it renders on GitHub.
+
+---
+
 ## Reference — Preserved Combined Project Context
 
 > The content below is the pre-restructure combined context, compiled 2026-09-13 from `README.md`, `docs/gameplay-plan.md`, `docs/StockArena-Plan-v2.pdf` (Draft V2, supersedes Draft V1), `worker/` (`poller.py`, `schema.sql`, `requirements.txt`, `railway.json`, `Procfile`, `.env.example`, `.python-version`), `web/` (`app/page.js`, `app/layout.js`, `app/globals.css`, `package.json`, `next.config.js`), `.gitignore`, and git history. Preserved verbatim during the 9/13/26 restructure — nothing deleted. Where it overlaps the gameplay source of truth above, the source of truth wins.
