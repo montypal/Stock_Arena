@@ -1,16 +1,154 @@
 # StockArena — contextHistory.md
 
-> Combined context file. Sources: `README.md`, `docs/gameplay-plan.md`, `docs/StockArena-Plan-v2.pdf` (Draft V2, supersedes Draft V1), `worker/` (`poller.py`, `schema.sql`, `requirements.txt`, `railway.json`, `Procfile`, `.env.example`, `.python-version`), `web/` (`app/page.js`, `app/layout.js`, `app/globals.css`, `package.json`, `next.config.js`), `.gitignore`, git history.
-> Last updated: 2026-09-13. Location: `C:\Users\jaxzc.JACKSON\OneDrive\Desktop\Coding\StockArena` (cloned from `https://github.com/montypal/Stock_Arena.git`, branch `main`).
+## How This File Works — Shared Project Memory
 
-## Changelog
+`contextHistory.md` is the shared memory for the project. It is used by both developers and AI coding agents, including OpenCode and Claude Code, so that everyone can understand the current state of the project and what has happened previously.
 
-### 2026-09-13 16:15 -07:00 — sayhibye10102-collab — OpenCode
-- Created project `AGENTS.md` with the remote-check-before-edit rule (check GitHub remote, pull when safe, stop and ask if local changes could conflict, never overwrite/discard/reset/force-push others' work) and the `contextHistory.md` maintenance protocol (read before changing, update after, newest entry on top, same-commit history updates, real author attribution).
-- Per the new rule itself, this history update is committed together with `AGENTS.md`.
-- Follow-up: the Claude Code collaborator should read the new `AGENTS.md` so both sides follow the same pull-before-edit and history-update workflow.
+* It contains the current source of truth for the game's gameplay direction and a permanent history of changes made throughout development.
+* ANY developer or AI working on this project MUST read `contextHistory.md` BEFORE making changes.
+* It must be checked at the beginning of every task, not just once when the project is first opened.
+* The information in this file should be used to understand previous decisions, current gameplay, existing functionality, and changes made by other collaborators.
+* AFTER making a meaningful change to the project, the developer or AI MUST add an update to `contextHistory.md`.
+* NEVER delete, remove, erase, or rewrite previous updates unless explicitly told to.
+* Existing history must always be preserved.
+* New updates are appended to the Updates section.
+* The goal is for this file to eventually contain a very large chronological history of the project's development, so future developers and AI agents can understand how the project evolved.
+* Every update must identify WHO made the change, WHEN the change was made, and WHAT was changed.
+* Use the actual developer/AI identity. For my OpenCode changes, use `Jackson OpenCode`. For my friend's Claude Code changes, use his appropriate identity.
+* Use the actual date and time whenever possible.
+* Do not make up previous history. Only record changes that actually happened.
+* If a task makes multiple related changes, they can be recorded together as one update.
+* Do not consider a meaningful task complete until its corresponding update has been added to `contextHistory.md`.
+
+> Project location: `C:\Users\jaxzc.JACKSON\OneDrive\Desktop\Coding\StockArena` (cloned from `https://github.com/montypal/Stock_Arena.git`, branch `main`).
+
+# StockArena — Regular Gameplay Plan
+
+StockArena is a weekly stock-picking competition where players compete against other players by investing fake money into real stocks.
+
+Each league lasts one full week, from Monday through Sunday.
+
+Players receive a set amount of virtual money when they join a league. They use that money to buy stocks and build their portfolio. As the real stock market moves throughout the week, the value of their portfolio changes.
+
+Players also earn achievements during the week. Achievements pay out additional virtual money directly into their portfolio, giving players a second way to grow their balance beyond the market itself.
+
+At the end of Sunday, the player whose portfolio has made the most money wins the league.
+
+## Joining a League
+
+**Random League** — join an automatically created league against randomly selected players.
+
+**Private League** — create or join a league with friends. Private leagues can set their own name, players, starting balance, weekly schedule, and whether achievements are on.
+
+## Weekly Game Loop
+
+**Monday — League Begins.** Players receive their starting balance, which varies by league (Bronze $10,000 · Silver $25,000 · Gold $50,000 · higher leagues more). They buy stocks, which then move with the real market. The first achievements become available immediately.
+
+**Tuesday–Thursday — Watch Your Portfolio.** Players monitor portfolio value, profit and loss, individual stock performance, league position, and distance from the players above and below. Achievements unlock through these days based on performance, paying cash into the available balance.
+
+**Friday — Final Trade Opportunity.** One last chance to sell and rebuy. Achievement money earned during the week is available to spend. After this trade the portfolio is locked.
+
+**Saturday–Sunday — Final Stretch.** No trading. Achievements can still be earned, since they depend on performance and position rather than trading.
+
+**Sunday — League Ends.** Final portfolio value is calculated including all achievement money. Most profit wins.
+
+## League Structure
+
+Every league has a fixed starting balance, a Monday start, a Sunday end, a player group, a leaderboard, real prices, fake money, one Friday trade, a shared achievement set, and a winner.
+
+## Leaderboard
+
+Ranked by money made. Achievement money counts toward the total, so a player behind on the market can still climb by earning more achievements than the people around them.
+
+Notifications fire when a player takes first, gets passed, enters the top three, comes close to overtaking someone, earns an achievement, is near completing one, or when the league is about to end.
+
+## Portfolio
+
+Shows total value, starting balance, total profit and loss, stocks owned, amount invested per stock, current value per position, per-stock profit and loss, available cash, and achievement money earned this week. Tapping a stock shows its performance during the competition.
+
+## Trading
+
+Deliberately limited. Free choice of stocks on Monday, then one final trade on Friday, then locked. The Friday trade is the week's major strategic moment: "stay with what got me here, or make one last move?"
+
+## Achievements
+
+Challenges completed during a league that pay virtual money. They give players something to chase when the market is quiet, and give players who are behind a way to catch up.
+
+Every achievement is available to every player in the league. Nobody starts with an advantage — achievements are earned during the week, not unlocked beforehand.
+
+### Weekly achievements — pay into the current league
+
+| Achievement   | Condition                              | Award   |
+| ------------- | -------------------------------------- | ------- |
+| First Buy     | Build your portfolio on Monday         | +$250   |
+| Diversified   | Hold five or more different stocks     | +$300   |
+| Green Open    | Finish Monday in profit                | +$250   |
+| Comeback      | Climb five or more places in a day     | +$500   |
+| Big Mover     | Own the league's best stock on any day | +$500   |
+| Photo Finish  | Sit within $100 of the player above    | +$400   |
+| Podium Streak | Hold top three for three days running  | +$750   |
+| Clean Sweep   | Every stock up at the same time        | +$1,000 |
+| Conviction    | Make no changes at the Friday trade    | +$1,000 |
+| Closer        | Finish higher than you were on Friday  | +$750   |
+
+### Career achievements — pay coins to the profile
+
+| Achievement    | Condition                        | Award |
+| -------------- | -------------------------------- | ----- |
+| First League   | Finish a full league             | 100   |
+| First Win      | Win a league                     | 500   |
+| Podium Player  | Finish top three five times      | 400   |
+| Regular        | Play ten leagues                 | 300   |
+| Friendly Rival | Win a private league             | 400   |
+| Three-Peat     | Win three weeks in a row         | 1,000 |
+| Six Figures    | Reach $100,000 career profit     | 750   |
+| Perfect Week   | Hold first every day of a league | 1,500 |
+
+### Coins
+
+Separate from league money and never spendable inside a league. Used to unlock higher leagues, create additional private leagues, and customize a profile.
+
+Weekly achievements help you win the week you are playing. Career achievements build the profile over time. Keeping them separate is what stops veterans from starting each week richer than new players.
+
+## League Types
+
+Standard, Private, Higher-Level (unlocked with coins, larger balances), and Special (limited-time, own stock pools or achievement sets).
+
+## Progression
+
+A long-term profile tracking leagues played, leagues won, podium finishes, total simulated profit, best weekly performance, win rate, career earnings, best-performing stocks, achievements unlocked, coins earned, and current rank.
+
+## Core Gameplay Philosophy
+
+* **Monday:** Build your portfolio.
+* **Tuesday–Thursday:** Watch, strategize, chase achievements.
+* **Friday:** Make your final trade.
+* **Saturday–Sunday:** Hold and fight for the lead.
+* **Sunday:** Most profit wins.
+
+The excitement comes from watching the leaderboard change, earning achievements that push you up it, and deciding whether to hold your strategy or make a final move before the Friday lock.
+
+## Updates
+
+The Updates section grows throughout the entire project. Every update is separated from the next by this exact separator:
 
 ---
+
+Jackson OpenCode 4:15 PM 9/13/26
+
+Created project `AGENTS.md` with the remote-check-before-edit rule (check the GitHub remote for new commits, pull when safe, stop and ask if local changes could conflict, never overwrite/discard/reset/force-push anyone else's work) and the `contextHistory.md` maintenance protocol (read before changing, update after, newest entry on top, same-commit history updates, real author attribution). Committed together with the history update in `1a55c72`. Follow-up: the Claude Code collaborator should read the new `AGENTS.md` so both sides follow the same workflow.
+
+---
+
+Jackson OpenCode 4:24 PM 9/13/26
+
+Restructured `contextHistory.md` into the shared-memory format: a "How This File Works" explanation at the top, the weekly Regular Gameplay Plan as the current source of truth, and an `## Updates` section. Migrated the one genuinely existing historical update (project `AGENTS.md` creation, commit `1a55c72`) into the new update format with its original timestamp — no history was invented. Moved the entire pre-existing combined project context (gameplay visions, daily-contest V2 plan, architecture, worker/web deep dives, database, env vars, deploy notes, quick reference) into the preserved `## Reference` section below without deleting any information. Verified before editing: `git pull origin main` returned already up to date with a clean tree.
+
+---
+
+## Reference — Preserved Combined Project Context
+
+> The content below is the pre-restructure combined context, compiled 2026-09-13 from `README.md`, `docs/gameplay-plan.md`, `docs/StockArena-Plan-v2.pdf` (Draft V2, supersedes Draft V1), `worker/` (`poller.py`, `schema.sql`, `requirements.txt`, `railway.json`, `Procfile`, `.env.example`, `.python-version`), `web/` (`app/page.js`, `app/layout.js`, `app/globals.css`, `package.json`, `next.config.js`), `.gitignore`, and git history. Preserved verbatim during the 9/13/26 restructure — nothing deleted. Where it overlaps the gameplay source of truth above, the source of truth wins.
 
 ## 1. What StockArena Is
 
