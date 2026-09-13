@@ -175,6 +175,17 @@ Repo cleanup before starting on the app, at Aarav's request ("delete all the fil
 
 ---
 
+Aarav — Claude Code 4:56 PM 9/13/26
+
+Removed the `docs/` folder at Aarav's request: `contextHistory.md` is now the single home for the gameplay plan and project context. Pulled `origin/main` first (already up to date).
+
+- Deleted `docs/gameplay-plan.md`, the last file in `docs/`. Its weekly plan is the same one already at the top of this file, and it remains in git history.
+- Removed the `docs/` row from the layout table in `README.md`.
+- Changed the footer of `web/app/page.js` from "finalize the gameplay plan in `docs/`" to "in `contextHistory.md`". Text-only change; Vercel will redeploy on push.
+- Follow-up: the plan at the top of this file is still the Bronze/Silver/Gold version. Aarav's newer draft (1K/10K/100K leagues, rank-matched public leagues, coins separate from league money) should replace it here once Aarav and Jackson agree.
+
+---
+
 ## Reference — Preserved Combined Project Context
 
 > The content below is the pre-restructure combined context, compiled 2026-09-13 from `README.md`, `docs/gameplay-plan.md`, `docs/StockArena-Plan-v2.pdf` (Draft V2, supersedes Draft V1), `worker/` (`poller.py`, `schema.sql`, `requirements.txt`, `railway.json`, `Procfile`, `.env.example`, `.python-version`), `web/` (`app/page.js`, `app/layout.js`, `app/globals.css`, `package.json`, `next.config.js`), `.gitignore`, and git history. Preserved verbatim during the 9/13/26 restructure — nothing deleted. Where it overlaps the gameplay source of truth above, the source of truth wins.

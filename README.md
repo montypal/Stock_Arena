@@ -50,7 +50,6 @@ it means prices tick on a schedule we control.
 |---|---|---|
 | `worker/` | Railway | Python price poller. Long-lived process. Config in `worker/railway.json`. |
 | `web/` | Vercel | Next.js frontend. Currently a status page. |
-| `docs/` | — | Project and gameplay plans. |
 
 ## Making changes
 

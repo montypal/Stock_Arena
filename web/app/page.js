@@ -91,7 +91,7 @@ export default async function Page() {
       )}
 
       <footer>
-        Next step: finalize the gameplay plan in <code>docs/</code>, then model
+        Next step: finalize the gameplay plan in <code>contextHistory.md</code>, then model
         leagues, entries, and positions.
       </footer>
     </main>
