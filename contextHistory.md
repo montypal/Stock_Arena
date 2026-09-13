@@ -164,6 +164,17 @@ Added the StockArena logo to the project (`assets/stockarena.png`, copied from `
 
 ---
 
+Aarav — Claude Code 4:54 PM 9/13/26
+
+Repo cleanup before starting on the app, at Aarav's request ("delete all the files that are unnecessary; keep Jackson's work and the .md files"). Pulled `origin/main` first, which fast-forwarded Jackson's logo + README commits (`f0f66d8`, `9cfc809`) with no conflicts.
+
+- Deleted `docs/StockArena-Plan-v2.pdf` (~800 KB). It described the superseded daily-contest design; its content is preserved in the Reference section below and the file remains in git history (`git show 5c3d914:docs/StockArena-Plan-v2.pdf`).
+- Updated the header of `docs/gameplay-plan.md`, which pointed at the deleted PDF, to point at `contextHistory.md` instead. Plan content unchanged.
+- Kept everything else deliberately: `worker/` and `web/` are the code running live on Railway and Vercel; `worker/Procfile`, `railway.json`, and `.python-version` are needed by the Railway build; all `.md` files and `assets/stockarena.png` kept as requested. Mentions of the PDF in earlier entries and the Reference section are history and were left as-is.
+- Follow-up: the gameplay source of truth is still split (see the 4:48 PM entry). `web/` is still the infrastructure status page and will be replaced as the app is built.
+
+---
+
 ## Reference — Preserved Combined Project Context
 
 > The content below is the pre-restructure combined context, compiled 2026-09-13 from `README.md`, `docs/gameplay-plan.md`, `docs/StockArena-Plan-v2.pdf` (Draft V2, supersedes Draft V1), `worker/` (`poller.py`, `schema.sql`, `requirements.txt`, `railway.json`, `Procfile`, `.env.example`, `.python-version`), `web/` (`app/page.js`, `app/layout.js`, `app/globals.css`, `package.json`, `next.config.js`), `.gitignore`, and git history. Preserved verbatim during the 9/13/26 restructure — nothing deleted. Where it overlaps the gameplay source of truth above, the source of truth wins.

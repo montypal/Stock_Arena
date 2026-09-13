@@ -1,8 +1,7 @@
 # StockArena — Regular Gameplay Plan
 
-Current source of truth for gameplay. The infrastructure plan lives in
-`StockArena-Plan-v2.pdf`; where the two disagree, this file wins on gameplay and
-the PDF wins on architecture and constraints.
+Gameplay plan. Architecture, constraints, and the shared change log live in
+`contextHistory.md` at the repo root.
 
 ## 1. Core Concept
 
