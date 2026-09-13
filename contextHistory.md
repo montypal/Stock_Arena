@@ -146,6 +146,18 @@ Restructured `contextHistory.md` into the shared-memory format: a "How This File
 
 ---
 
+Aarav — Claude Code 4:48 PM 9/13/26
+
+Catch-up entry for the infrastructure work done before this log existed, plus today's deployment. Code changes were made by Claude Code; the Railway and Vercel dashboard setup was done by Aarav following Claude Code's instructions.
+
+- Commits: `10c3d46` scaffolded `worker/` (Python Finnhub poller → Postgres `price_ticks` + `latest_price`), `web/` (Next.js status page reading `latest_price`), and `docs/`. `7989b72` fixed the first Railway build (`pip: command not found`) by moving `railway.json` into `worker/`, dropping the forced `pip install` build command so Railway detects Python itself, and pinning Python 3.12 via `worker/.python-version`. `39dc7ba` added a "Making changes" section to `README.md` (edit locally → commit → `git push` → Railway/Vercel auto-deploy). `a6d8b78` merged Jackson's `AGENTS.md` / `contextHistory.md` commits; no conflicts.
+- Railway (project "cozy-illumination"): worker service from this repo with Root Directory `worker`, plus a Postgres service. Worker variables: `FINNHUB_API_KEY`, `TICKERS` (AAPL,TSLA,NVDA,AMD,SOFI,PLTR,COIN,MARA), `POLL_SECONDS=60`, `MARKET_HOURS_ONLY=1`, and `DATABASE_URL=${{Postgres.DATABASE_URL}}` (private network, no egress fees). Postgres has a TCP proxy on 5432 and a `DATABASE_PUBLIC_URL` variable, used only by Vercel.
+- Vercel (Aarav's account): Root Directory `web`, env `DATABASE_URL` = Railway's `DATABASE_PUBLIC_URL`. Live at https://web-orpin-nine-95.vercel.app, verified returning HTTP 200 with "8 symbols cached". Worker logs confirmed `wrote 8/8` each minute.
+- Decision: Aarav approved following `AGENTS.md`; Claude Code will pull before editing and log changes here from now on.
+- Follow-up: (1) Gameplay source of truth is out of sync. Aarav's latest draft — 1K/10K/100K leagues, rank-matched public leagues (private leagues unmatched), league money kept separate from coins, coins paid by finishing position — is not yet in the repo; both `docs/gameplay-plan.md` and the plan at the top of this file predate it. Aarav and Jackson should agree on one version before building features. (2) `poller.py` does not reconnect if Postgres restarts; it relies on Railway's ON_FAILURE restart. (3) Market-hours check has no holiday/half-day calendar yet. (4) `AGENTS.md` says newest entry on top, but this file appends oldest-first; this entry follows the file's existing order.
+
+---
+
 ## Reference — Preserved Combined Project Context
 
 > The content below is the pre-restructure combined context, compiled 2026-09-13 from `README.md`, `docs/gameplay-plan.md`, `docs/StockArena-Plan-v2.pdf` (Draft V2, supersedes Draft V1), `worker/` (`poller.py`, `schema.sql`, `requirements.txt`, `railway.json`, `Procfile`, `.env.example`, `.python-version`), `web/` (`app/page.js`, `app/layout.js`, `app/globals.css`, `package.json`, `next.config.js`), `.gitignore`, and git history. Preserved verbatim during the 9/13/26 restructure — nothing deleted. Where it overlaps the gameplay source of truth above, the source of truth wins.
