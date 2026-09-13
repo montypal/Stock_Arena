@@ -30,6 +30,19 @@ it means prices tick on a schedule we control.
 | `web/` | Vercel | Next.js frontend. Currently a status page. |
 | `docs/` | — | Project and gameplay plans. |
 
+## Making changes
+
+The code lives on this computer in `Documents\stockarena`. GitHub holds the
+shared copy, and Railway and Vercel deploy from GitHub automatically.
+
+1. Edit files here, locally.
+2. Commit them.
+3. Run `git push` from this folder in PowerShell.
+4. Railway rebuilds `worker/` and Vercel rebuilds `web/` on their own.
+
+Nothing is ever edited directly on GitHub, Railway, or Vercel. If code is ever
+changed on GitHub, run `git pull` here before making new changes.
+
 ## Running the worker locally
 
 No database needed — it runs in dry-run mode and prints quotes to the console.
