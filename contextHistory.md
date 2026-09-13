@@ -3,6 +3,15 @@
 > Combined context file. Sources: `README.md`, `docs/gameplay-plan.md`, `docs/StockArena-Plan-v2.pdf` (Draft V2, supersedes Draft V1), `worker/` (`poller.py`, `schema.sql`, `requirements.txt`, `railway.json`, `Procfile`, `.env.example`, `.python-version`), `web/` (`app/page.js`, `app/layout.js`, `app/globals.css`, `package.json`, `next.config.js`), `.gitignore`, git history.
 > Last updated: 2026-09-13. Location: `C:\Users\jaxzc.JACKSON\OneDrive\Desktop\Coding\StockArena` (cloned from `https://github.com/montypal/Stock_Arena.git`, branch `main`).
 
+## Changelog
+
+### 2026-09-13 16:15 -07:00 — sayhibye10102-collab — OpenCode
+- Created project `AGENTS.md` with the remote-check-before-edit rule (check GitHub remote, pull when safe, stop and ask if local changes could conflict, never overwrite/discard/reset/force-push others' work) and the `contextHistory.md` maintenance protocol (read before changing, update after, newest entry on top, same-commit history updates, real author attribution).
+- Per the new rule itself, this history update is committed together with `AGENTS.md`.
+- Follow-up: the Claude Code collaborator should read the new `AGENTS.md` so both sides follow the same pull-before-edit and history-update workflow.
+
+---
+
 ## 1. What StockArena Is
 
 **One-liner (README):** A stock-picking competition. Real market prices, fake money, no real trades.
