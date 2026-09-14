@@ -1,8 +1,8 @@
-import { requireUser } from '../../lib/auth';
-import { pastEntries, tierInfo } from '../../lib/game';
-import { money, ordinal, signedMoney, tone, weekLabel } from '../../lib/format';
-import { logout } from '../actions';
-import { PageHead } from '../ui';
+import { requireUser } from '../../../lib/db/auth';
+import { pastEntries, tierInfo } from '../../../lib/trading/game';
+import { money, ordinal, signedMoney, tone, weekLabel } from '../../../lib/utils/format';
+import { logout } from '../../../lib/actions';
+import { PageHead } from '../../../components/layout/ui';
 
 export default async function ProfilePage() {
   const user = await requireUser();

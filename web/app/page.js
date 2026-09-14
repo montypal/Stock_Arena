@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { currentUser } from '../lib/auth';
+import { currentUser } from '../lib/db/auth';
 
 export default async function Home() {
   if (await currentUser()) redirect('/league');

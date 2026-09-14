@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { requireUser } from '../../../lib/auth';
-import { POSITION_CAP, currentEntry, marketOpen, orders, stock, tradeLimits } from '../../../lib/game';
-import { money, pct, shareCount, timeET, tone } from '../../../lib/format';
-import { cancel, trade } from '../../actions';
-import AutoRefresh from '../../refresh';
-import { Flash } from '../../ui';
+import { requireUser } from '../../../../lib/db/auth';
+import { POSITION_CAP, currentEntry, marketOpen, orders, stock, tradeLimits } from '../../../../lib/trading/game';
+import { money, pct, shareCount, timeET, tone } from '../../../../lib/utils/format';
+import { cancel, trade } from '../../../../lib/actions';
+import AutoRefresh from '../../../../components/layout/refresh';
+import { Flash } from '../../../../components/layout/ui';
 
 export default async function StockPage({ params, searchParams }) {
   const [{ symbol: raw }, sp] = await Promise.all([params, searchParams]);

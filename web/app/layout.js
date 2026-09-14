@@ -1,6 +1,6 @@
 import './globals.css';
-import NavBar from './nav';
-import { currentUser } from '../lib/auth';
+import NavBar from '../components/layout/nav';
+import { currentUser } from '../lib/db/auth';
 
 // Every page depends on who's logged in and on live prices.
 export const dynamic = 'force-dynamic';

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { requireUser } from '../../lib/auth';
+import { requireUser } from '../../../lib/db/auth';
 import {
   TIERS,
   currentEntry,
@@ -10,11 +10,11 @@ import {
   orders,
   summarize,
   tierInfo,
-} from '../../lib/game';
-import { money, ordinal, pct, shareCount, signedMoney, timeET, tone, weekLabel } from '../../lib/format';
-import { cancel, join } from '../actions';
-import AutoRefresh from '../refresh';
-import { Flash } from '../ui';
+} from '../../../lib/trading/game';
+import { money, ordinal, pct, shareCount, signedMoney, timeET, tone, weekLabel } from '../../../lib/utils/format';
+import { cancel, join } from '../../../lib/actions';
+import AutoRefresh from '../../../components/layout/refresh';
+import { Flash } from '../../../components/layout/ui';
 
 export default async function LeaguePage({ searchParams }) {
   const sp = await searchParams;

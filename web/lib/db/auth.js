@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { randomBytes, scrypt as scryptCb, timingSafeEqual, createHash } from 'node:crypto';
 import { promisify } from 'node:util';
-import { query, one } from './db';
+import { query, one } from './index';
 
 const scrypt = promisify(scryptCb);
 

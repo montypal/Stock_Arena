@@ -234,6 +234,26 @@ Buddies may eventually be collectible — different buddy designs unlockable via
 
 StockArena is a weekly fantasy-trading competition: you pick a league tier (1K, 10K, or 100K in starting fake money), build a simulated stock portfolio using real, live market prices, and compete on a live leaderboard against other players in your tier to see who grows their portfolio the most by week's end. Winning earns coins, which unlock animated 3D chests with rewards, and a cute animated companion — your "buddy" — lives in the corner of the app, reacting to your performance and giving you a charming way to check your stats at any time.
 
+## Tech Stack
+
+What we are building with (declared stack — see notes where the code hasn't caught up yet):
+
+- **Web app:** Next.js 15 (App Router) + React 19, hosted on **Vercel** (`web/`, Root Directory `web`). NOTE: current code is JavaScript (`.js`); the TypeScript migration hasn't happened yet. `web/types/` is reserved for shared types/interfaces when it does.
+- **3D:** Three.js / React Three Fiber for the buddy companion and chest-opening animations. Home: `web/components/three/` (buddy, chest), models in `web/public/models/` (`.glb`). NOTE: R3F is not installed yet and no 3D code exists — installing `three` + `@react-three/fiber` (+ `@react-three/drei` if needed) is a follow-up.
+- **Worker:** Python 3.12 price poller + game engine (`worker/`), hosted on **Railway** with restart ON_FAILURE. Fills orders (forward pricing), settles leagues, seeds prices.
+- **Database:** **Postgres** on Railway. Worker uses the private `DATABASE_URL`; Vercel uses `DATABASE_PUBLIC_URL` (TCP proxy).
+- **Market data:** **Finnhub** (`/quote`), 30-stock universe in the `stocks` table — inside the 60 calls/min free limit. `TICKERS` env var retired.
+- **Mobile plan:** wrap the web app with **Capacitor** for iOS/Android App Store submission once the core app is feature-complete. No React Native, no Swift.
+
+Current `web/` layout (feature-based; route groups in parentheses don't change URLs):
+
+- `app/` — `page.js`, `layout.js`, `globals.css`, `manifest.js` stay at top level; `(auth)/login`, `(auth)/signup`; `(battles)/league`, `(battles)/trade`, `(battles)/trade/[symbol]`; `(profile)/profile`; `(admin)/status`; `api/` reserved for backend routes; empty groups `(daily)`, `(social)`, `(community)`, `(mentor)`, `(leaderboard)`, `(progression)`, `(settings)` hold `.gitkeep` placeholders for upcoming features.
+- `components/` — `layout/` (NavBar, PageHead/Flash, AutoRefresh); `battle/`, `social/`, `profile/` reserved; `three/` reserved for buddy/chest R3F components.
+- `lib/` — `db/` (Postgres pool in `index.js`, auth/sessions in `auth.js`); `trading/` (league/portfolio/order logic in `game.js`); `utils/` (formatting in `format.js`); `xp/` reserved for XP/rank calculations; `actions.js` (server actions: signup, login, logout, join, trade, cancel).
+- `types/` — reserved for shared TypeScript types (JS codebase for now).
+- `public/models/` — reserved for `.glb` 3D model assets.
+- `worker/` and top-level `assets/` are intentionally untouched by the restructure.
+
 ## Updates
 
 The Updates section grows throughout the entire project. Every update is separated from the next by this exact separator:
@@ -333,5 +353,11 @@ Stage 2 of the v1 build: the playable web app in `web/`. Pulled `origin/main` fi
 Jackson OpenCode 8:28 PM 9/13/26
 
 Removed the `## Reference — Preserved Combined Project Context` section from `contextHistory.md` at Jackson's explicit request, and inserted the StockArena App Overview ("game overall": 1K/10K/100K tiers, trading mechanics, live tracking, leaderboard, settlement, coins/chests, buddy companion) between the Regular Gameplay Plan and `## Updates`. File order is now: how-to-use explanation, gameplay plan, app overview, updates at the end. All 8 existing Updates entries preserved untouched; the removed Reference content remains recoverable in git history. Note: the friend's 4:54 PM entry and older entries mention the Reference section and the deleted `docs/` files — those mentions are history and were left as-is.
+
+---
+
+Jackson OpenCode 8:55 PM 9/13/26
+
+Restructured `web/` into the feature-based layout (route groups, `components/`, `lib/db|xp|trading|utils`, `types/`, `public/models/`) with zero logic changes — moves via `git mv` so file history is preserved; `worker/` and top-level `assets/` untouched. Did it in 3 incremental moves, each verified: (1) `lib/` split (`db.js`→`lib/db/index.js`, `auth.js`→`lib/db/auth.js`, `game.js`→`lib/trading/game.js`, `format.js`→`lib/utils/format.js`, `app/actions.js`→`lib/actions.js`, `lib/xp/` placeholder); (2) shared UI into `components/layout/` (`nav.js`, `ui.js`, `refresh.js`) with `battle/`, `social/`, `profile/`, `three/` placeholders; (3) pages into route groups (`(auth)`, `(battles)`, `(profile)`, `(admin)`) plus `api/` and future-feature placeholders — parenthesized groups, so all 9 URLs are byte-identical. Ran `npm install` + `npx next build` after every move (all green; route table identical each time) and smoke-tested the production server (`/`, `/login`, `/status`, `/league` all HTTP 200). Also added a `## Tech Stack` section documenting Next.js App Router + React, planned TypeScript migration (`types/` reserved; code is JS today), Three.js/R3F for buddy/chest (`three/` + `public/models/` reserved, not installed yet), Vercel + Railway + Postgres + Finnhub, and the Capacitor wrap plan for App Store submission (no React Native, no Swift). Follow-ups: install R3F packages, TS migration, XP/rank logic in `lib/xp/`, backend routes in `app/api/`; `web/package-lock.json` (from the local install) left untracked.
 
 ---

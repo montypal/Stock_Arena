@@ -1,9 +1,9 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { one } from '../lib/db';
-import { currentUser, endSession, hashPassword, startSession, verifyPassword } from '../lib/auth';
-import { GameError, cancelOrder, joinLeague, marketOpen, placeOrder, tierInfo } from '../lib/game';
+import { one } from './db';
+import { currentUser, endSession, hashPassword, startSession, verifyPassword } from './db/auth';
+import { GameError, cancelOrder, joinLeague, marketOpen, placeOrder, tierInfo } from './trading/game';
 
 // Every action redirects back with a message in the query string. redirect()
 // works by throwing, so it's always called outside try/catch blocks.

@@ -1,5 +1,5 @@
-import { query, one, transaction } from './db';
-import { money } from './format';
+import { query, one, transaction } from '../db';
+import { money } from '../utils/format';
 
 export const TIERS = [
   { tier: 1000, label: '1K League', short: '1K', multiplier: 1 },

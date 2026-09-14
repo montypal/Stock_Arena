@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { currentUser } from '../../lib/auth';
-import { signup } from '../actions';
-import { Flash, PageHead } from '../ui';
+import { currentUser } from '../../../lib/db/auth';
+import { signup } from '../../../lib/actions';
+import { Flash, PageHead } from '../../../components/layout/ui';
 
 export default async function SignupPage({ searchParams }) {
   const sp = await searchParams;

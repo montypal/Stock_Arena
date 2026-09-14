@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import { requireUser } from '../../lib/auth';
-import { currentEntry, marketOpen, stocks } from '../../lib/game';
-import { first, money, pct, tone } from '../../lib/format';
-import AutoRefresh from '../refresh';
-import { Flash, PageHead } from '../ui';
+import { requireUser } from '../../../lib/db/auth';
+import { currentEntry, marketOpen, stocks } from '../../../lib/trading/game';
+import { first, money, pct, tone } from '../../../lib/utils/format';
+import AutoRefresh from '../../../components/layout/refresh';
+import { Flash, PageHead } from '../../../components/layout/ui';
 
 export default async function TradePage({ searchParams }) {
   const sp = await searchParams;

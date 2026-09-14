@@ -1,4 +1,4 @@
-import { first } from '../lib/format';
+import { first } from '../../lib/utils/format';
 
 export function Flash({ sp }) {
   const error = first(sp?.error);
