@@ -186,6 +186,31 @@ Removed the `docs/` folder at Aarav's request: `contextHistory.md` is now the si
 
 ---
 
+Aarav — Claude Code 5:12 PM 9/13/26
+
+Started building the app (stage 1 of 2: the game engine in `worker/`). Aarav gave the build prompt: StockArena Project Plan Draft v1 plus Claude's feedback. Pulled `origin/main` first (up to date).
+
+**v1 build spec, as decided for this build** (Draft v1 core + the feedback's technical fixes):
+- Weekly leagues at three tiers: 1K / 10K / 100K starting play money. One league per player per week.
+- Players are placed in rooms of up to 30 inside a league; leaderboards are per room. Rank-based matchmaking is deferred (no rank exists yet).
+- Weeks run Monday 00:00 → next Monday 00:00 America/New_York. Trading is open until Friday's 4:00 PM close; after that, "join" means next week's league, and pre-open orders fill at Monday's open.
+- Buy by dollar amount (fractional shares), sell by dollar amount or "sell all". Long-only.
+- No stock may exceed 20% of portfolio value at the time of buying.
+- **Forward pricing:** orders are stored as pending and fill only at the first price the worker observes *after* the order was placed. Prices seeded while the market is closed are display-only and never fill orders.
+- Tradable universe is a fixed list of 30 stocks in the `stocks` table (30 calls/min, inside Finnhub's 60/min free limit). The `TICKERS` env var is no longer used.
+- Settlement at Monday 00:00 ET: pending orders cancelled, rooms ranked by final value (ties → earlier join), coins paid: 1st 500, 2nd 350, 3rd 250, top half 100, everyone else 50, × tier multiplier (1K ×1, 10K ×2, 100K ×4). Players with no filled order get 0. Coins are never cashable, tradable, or purchasable.
+- Chests, buddy, rank matchmaking, achievements, notifications come after the core loop works.
+
+**Changes:**
+- `worker/schema.sql`: added `stocks` (30 seeded), `users`, `sessions`, `leagues`, `rooms`, `entries`, `positions`, `orders`; added `latest_price.prev_close`. All idempotent; applied by the worker on start.
+- `worker/game.py` (new): `fill_pending_orders` (per-order transaction, row locks, Decimal math, dust handling), `settle_due_leagues` (idempotent via `FOR UPDATE` on the league row + status check), `coin_payout`, `rank_room`.
+- `worker/poller.py`: polls active symbols from the DB, stores previous close, stamps each quote with database time taken just before its request (so the forward-pricing comparison with `orders.placed_at` uses one clock), fills orders and settles leagues each open cycle, settles + seeds missing prices while closed, and reconnects after a lost DB connection instead of crashing.
+- `worker/test_game.py` (new): unit tests for payouts and ranking; 6/6 pass locally. SQL paths were not run locally (no local Postgres); they get exercised on Railway.
+- `worker/.env.example`: dropped `TICKERS`.
+- Follow-up: stage 2 is the web app (accounts, league picker, trading screens, portfolio, leaderboard). The Railway `TICKERS` variable can be deleted.
+
+---
+
 ## Reference — Preserved Combined Project Context
 
 > The content below is the pre-restructure combined context, compiled 2026-09-13 from `README.md`, `docs/gameplay-plan.md`, `docs/StockArena-Plan-v2.pdf` (Draft V2, supersedes Draft V1), `worker/` (`poller.py`, `schema.sql`, `requirements.txt`, `railway.json`, `Procfile`, `.env.example`, `.python-version`), `web/` (`app/page.js`, `app/layout.js`, `app/globals.css`, `package.json`, `next.config.js`), `.gitignore`, and git history. Preserved verbatim during the 9/13/26 restructure — nothing deleted. Where it overlaps the gameplay source of truth above, the source of truth wins.
