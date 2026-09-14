@@ -49,7 +49,7 @@ it means prices tick on a schedule we control.
 | Path | Runs on | What it is |
 |---|---|---|
 | `worker/` | Railway | Python price poller. Long-lived process. Config in `worker/railway.json`. |
-| `web/` | Vercel | Next.js frontend. Currently a status page. |
+| `web/` | Vercel | Next.js app: accounts, league picker, trading, portfolio, room leaderboard. `/status` shows the price cache. |
 
 ## Making changes
 

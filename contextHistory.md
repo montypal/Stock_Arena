@@ -211,6 +211,19 @@ Started building the app (stage 1 of 2: the game engine in `worker/`). Aarav gav
 
 ---
 
+Aarav — Claude Code 5:18 PM 9/13/26
+
+Stage 2 of the v1 build: the playable web app in `web/`. Pulled `origin/main` first (up to date). Verified stage 1 in production before pushing: the worker applied the new schema and seeded prices for all 30 stocks while the market was closed (live status page showed "30 symbols cached").
+
+- **Accounts** (`web/lib/auth.js`): username + password, scrypt hashes via `node:crypto`, 30-day httpOnly session cookie; only a sha256 of the session token is stored in `sessions`. No third-party auth service.
+- **Data layer** (`web/lib/db.js`, `web/lib/game.js`): shared `pg` pool; NUMERIC/BIGINT parsed to numbers, DATE kept as `YYYY-MM-DD` strings. `game.js` has league joining (creates the week's league row on demand, first room with space, else a new room of 30), portfolio + leaderboard queries, the stock list, trade limits, order placement, and cancel. Order placement re-checks everything server-side: trading window, stock has a price, available cash (cash minus pending buys), and the 20% cap (position value + pending buys of that stock). Fills themselves stay in the worker.
+- **Server actions** (`web/app/actions.js`): signup, login, logout, join, trade, cancel. Each redirects back with an `?ok=` / `?error=` message.
+- **Screens**: `/` landing, `/signup`, `/login`, `/league` (tier picker; portfolio value, P/L, place, cash; holdings; pending orders with cancel; room leaderboard; auto-refresh every 30s), `/trade` (searchable list of the 30 stocks with day change), `/trade/[symbol]` (price, position, buy by dollars, sell by dollars or sell all, pending orders), `/profile` (coins, record, past leagues, log out). The old infrastructure page moved to `/status`. Bottom tab bar, light/dark themes, installable via `app/manifest.js`.
+- Not built locally (no Node on this machine); Vercel's build is the first compile. `README.md` layout row for `web/` updated.
+- Follow-up: chests (deterministic reveals, no loot boxes), achievements, rank matchmaking, notifications, holiday calendar, login rate-limiting.
+
+---
+
 ## Reference — Preserved Combined Project Context
 
 > The content below is the pre-restructure combined context, compiled 2026-09-13 from `README.md`, `docs/gameplay-plan.md`, `docs/StockArena-Plan-v2.pdf` (Draft V2, supersedes Draft V1), `worker/` (`poller.py`, `schema.sql`, `requirements.txt`, `railway.json`, `Procfile`, `.env.example`, `.python-version`), `web/` (`app/page.js`, `app/layout.js`, `app/globals.css`, `package.json`, `next.config.js`), `.gitignore`, and git history. Preserved verbatim during the 9/13/26 restructure — nothing deleted. Where it overlaps the gameplay source of truth above, the source of truth wins.
