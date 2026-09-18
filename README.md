@@ -20,7 +20,7 @@ Players also earn achievements during the week, which pay out additional virtual
 
 ## Leagues and achievements
 
-- **Random leagues** match you against automatically selected players; **private leagues** let friends set their own name, players, starting balance, schedule, and achievement settings.
+- **Real people, not bots — not a solo simulation.** Every league is live against other real players who joined that week. **Random leagues** match you against automatically selected real opponents; **private leagues** let friends set their own name, players, starting balance, schedule, and achievement settings. When you join a league you are placed in a room with real people and compete on the same live leaderboard.
 - **Weekly achievements** (First Buy, Diversified, Comeback, Clean Sweep, Conviction, …) pay virtual money into the current league, so a player behind on the market can still climb.
 - **Career achievements** (First Win, Three-Peat, Perfect Week, …) pay coins to your profile. Coins unlock higher leagues, extra private leagues, and customization — and are never spendable inside a league, so veterans never start a week richer than new players.
 
@@ -44,12 +44,16 @@ the tracked symbols on a fixed interval and writes to Postgres. Every client
 reads the cache. This is what keeps a small free-tier rate limit survivable, and
 it means prices tick on a schedule we control.
 
+## Design — liquid glass, green and black
+
+The web app is mobile-first and every surface is **liquid glass over an animated green and black gradient**. Cards, capsules, header, and the floating 5-tab bar (Home / Battles / Daily / Progress / Profile) are frosted glass with rim light, specular sheen, and depth over a drifting green/black mesh (transform/opacity only, paused for `prefers-reduced-motion`). The active tab uses a sliding glass lens. The system lives in `web/app/globals.css` and `web/styles/screens/` — keep new UI on that language.
+
 ## Layout
 
 | Path | Runs on | What it is |
 |---|---|---|
 | `worker/` | Railway | Python price poller. Long-lived process. Config in `worker/railway.json`. |
-| `web/` | Vercel | Next.js app: accounts, league picker, trading, portfolio, room leaderboard. `/status` shows the price cache. |
+| `web/` | Vercel | Next.js app (mobile-first, liquid-glass green/black): device sign-in, league picker, trading, portfolio, room leaderboard. `/status` shows the price cache. |
 
 ## Making changes
 

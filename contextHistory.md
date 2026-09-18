@@ -670,3 +670,12 @@ Second redesign pass at Aarav's request: login page removed with device-based id
 * **Follow-up:** finish + review the integration pass and push; confirm the Vercel build and that the worker applied `device_hash`; Aarav's earlier password account (if any) can't be reached while login is removed — a new player name is needed on each device.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+README update at Jackson's request after pulling latest (`06cd97a`). No collaborator conflicts; `git fetch` showed `f2f3aad..06cd97a` fast-forward. `git status` clean except `web/package-lock.json` untracked (left untracked).
+
+* `README.md`: in `## Leagues and achievements` clarified **real opponents, not a solo simulation** — every league is live vs real people, random leagues match real opponents, joining places you in a room with real players on a shared leaderboard. In `## Design — liquid glass, green and black` (new) and `## Layout` described the required UI language — mobile-first liquid glass over an animated green/black mesh gradient (frosted glass, rim light, sheen, depth, sliding glass lens on the 5-tab bar Home/Battles/Daily/Progress/Profile), motion paused for `prefers-reduced-motion`, system in `web/app/globals.css` + `web/styles/screens/`. No code, secrets, or DB changes; verified README renders.
+* Follow-up: commit + push when Jackson approves; collaborators should keep real-players-only (Rule 17) and liquid-glass green/black language for all new screens.
+
+---
