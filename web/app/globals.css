@@ -628,8 +628,8 @@ body.signed-in .app {
   translate: calc(var(--i, 0) * 100%) 0;
   scale: 1;
   transition:
-    translate 0.62s cubic-bezier(0.22, 1.2, 0.36, 1),
-    scale 0.5s var(--spring),
+    translate 0.22s cubic-bezier(0.22, 1.2, 0.36, 1),
+    scale 0.24s var(--spring),
     opacity 0.3s ease;
   background:
     radial-gradient(90% 70% at 30% 0%, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 60%),

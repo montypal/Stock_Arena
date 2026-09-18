@@ -26,33 +26,44 @@ function activeIndex(path) {
 export default function NavBar() {
   const path = usePathname() ?? '';
   const index = activeIndex(path);
+  // Optimistic tab feedback: light the tapped tab + start the lens sliding
+  // at tap time, before the next route's server roundtrip finishes. Cleared
+  // as soon as usePathname reports the real route.
+  const [pending, setPending] = useState(null);
+  const display = pending ?? index;
   const [moving, setMoving] = useState(false);
-  const last = useRef(index);
+  const last = useRef(display);
 
   useEffect(() => {
-    if (last.current === index) return undefined;
-    last.current = index;
+    // Real route arrived: drop the optimistic index.
+    setPending(null);
+  }, [path]);
+
+  useEffect(() => {
+    if (last.current === display) return undefined;
+    last.current = display;
     setMoving(true);
     const t = setTimeout(() => setMoving(false), 260);
     return () => clearTimeout(t);
-  }, [index]);
+  }, [display]);
 
   return (
     <nav
       className="tabbar"
       aria-label="Main"
       data-moving={moving ? 'true' : 'false'}
-      data-has-active={index >= 0 ? 'true' : 'false'}
-      style={{ '--i': Math.max(index, 0) }}
+      data-has-active={display >= 0 ? 'true' : 'false'}
+      style={{ '--i': Math.max(display, 0) }}
     >
       <div className="tabbar-track">
         <span className="tab-glass" aria-hidden="true" />
         {TABS.map((t, i) => {
-          const active = i === index;
+          const active = i === display;
           return (
             <Link
               key={t.href}
               href={t.href}
+              onClick={() => setPending(i)}
               className={active ? 'tab active' : 'tab'}
               aria-current={active ? 'page' : undefined}
             >

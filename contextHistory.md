@@ -709,3 +709,14 @@ PLAN-only pass at Jackson's request: audited the 5-tab sidebar + liquid-glass im
 * Follow-up: implement the plan (code changes + Vercel build check); collaborators must not "fix" speed by removing the glass.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Implemented the snappy-tabs plan + fixed league prize copy at Jackson's request (two parallel specialists, verified in review). No remote changes; no destructive ops; no secrets.
+
+* **Snappier tabs, same glass:** `web/components/layout/nav.js` — optimistic pending index on tap so active tab + lens move immediately, cleared when the real route arrives; `web/app/globals.css` — lens travel 0.62 s → 0.22 s (same curve family; 2-line diff, all glass tokens/blur/colors/mesh untouched). New `web/components/layout/tab-skeletons.js` + six route `loading.js` files (glass skeletons, no new visual language, no mock data) so every tab paints instantly. `web/app/page.js`, `(battles)/league/page.js`, `(battles)/trade/page.js` — shell renders after minimal queries, slow cards (leaderboard, holdings, stock list, career) stream via keyed Suspense with same queries. `web/lib/db/auth.js` — `currentUser` wrapped in React `cache()` so layout + page share one session lookup; `force-dynamic` kept. No trading/payout/auth logic changed.
+* **League prize copy:** `web/components/battle/TierCards.js` — replaced "X coins to win" with "1st place wins X coins" + full placement breakdown per card (2nd 350 · 3rd 250 · top half 100 · finish 50, all × tier multiplier) + "Free to join — no coins to enter". Numbers mirror `worker/game.py` exactly (PLACE_COINS {1:500, 2:350, 3:250}, TOP_HALF 100, FINISH 50). Review catch: agent used a nonexistent `check` icon (renders empty) — swapped to existing `zap` icon.
+* **Verified:** `npm run build` green (5/5 static, all tab routes present); `coins to win` grep = zero hits; diff limited to nav + 2 CSS lines + skeletons/streaming + TierCards + auth cache.
+* Follow-up: feel the difference on a phone over LTE; Vercel build is the production check.
+
+---

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { requireUser } from '../../../lib/db/auth';
 import { currentEntry, marketOpen, stocks } from '../../../lib/trading/game';
 import { first } from '../../../lib/utils/format';
@@ -11,7 +12,7 @@ export default async function TradePage({ searchParams }) {
   const sp = await searchParams;
   const user = await requireUser();
   const q = String(first(sp?.q) ?? '').trim();
-  const [entry, list] = await Promise.all([currentEntry(user.id), stocks(q)]);
+  const entry = await currentEntry(user.id);
   const open = marketOpen();
 
   return (
@@ -49,26 +50,35 @@ export default async function TradePage({ searchParams }) {
         </p>
       ) : null}
 
-      <section className="card flush trade-board" aria-label="Stocks">
-        {list.length === 0 ? (
-          <p className="empty trade-empty">
-            {q ? (
-              <>
-                No stocks match “{q}”. <Link href="/trade">Show all stocks</Link>
-              </>
-            ) : (
-              'No stocks are listed right now.'
-            )}
-          </p>
-        ) : (
-          <StockList stocks={list} />
-        )}
-      </section>
+      <Suspense key={q} fallback={<section className="card flush" aria-label="Loading stocks" aria-busy="true" />}>
+        <StockResults q={q} />
+      </Suspense>
 
       <p className="fineprint">
         Change is versus the previous close. Prices update about once a minute while the market is
         open.
       </p>
     </main>
+  );
+}
+
+async function StockResults({ q }) {
+  const list = await stocks(q);
+  return (
+    <section className="card flush trade-board" aria-label="Stocks">
+      {list.length === 0 ? (
+        <p className="empty trade-empty">
+          {q ? (
+            <>
+              No stocks match “{q}”. <Link href="/trade">Show all stocks</Link>
+            </>
+          ) : (
+            'No stocks are listed right now.'
+          )}
+        </p>
+      ) : (
+        <StockList stocks={list} />
+      )}
+    </section>
   );
 }

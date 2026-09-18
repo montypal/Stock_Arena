@@ -41,7 +41,15 @@ export default function TierCards({ week, live, level = 2 }) {
               </li>
               <li className="gold">
                 <Icon name="trophy" size={16} strokeWidth={2} />
-                {(WIN_COINS * t.multiplier).toLocaleString('en-US')} coins to win
+                1st place wins {(WIN_COINS * t.multiplier).toLocaleString('en-US')} coins
+              </li>
+              <li className="prize-breakdown">
+                <Icon name="chart" size={16} strokeWidth={2} />
+                2nd {(350 * t.multiplier)} · 3rd {(250 * t.multiplier)} · top half {(100 * t.multiplier)} · finish {(50 * t.multiplier)} coins
+              </li>
+              <li className="free-entry">
+                <Icon name="zap" size={16} strokeWidth={2} />
+                Free to join — no coins to enter
               </li>
             </ul>
 

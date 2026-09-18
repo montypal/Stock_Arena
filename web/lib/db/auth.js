@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { randomBytes, scrypt as scryptCb, timingSafeEqual, createHash } from 'node:crypto';
@@ -53,7 +54,7 @@ export async function endSession() {
   store.delete(COOKIE);
 }
 
-export async function currentUser() {
+export const currentUser = cache(async function currentUser() {
   const store = await cookies();
   const token = store.get(COOKIE)?.value;
   if (!token) return null;
@@ -63,7 +64,7 @@ export async function currentUser() {
      WHERE s.token_hash = $1 AND s.expires_at > now()`,
     [digest(token)]
   );
-}
+});
 
 // Signed-out visitors go to the landing page, which signs this device in.
 export async function requireUser() {

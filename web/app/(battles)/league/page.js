@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { requireUser } from '../../../lib/db/auth';
 import {
   currentEntry,
@@ -37,6 +38,30 @@ export default async function LeaguePage({ searchParams }) {
   }
 
   const canJoinNext = entry.week_start < ws;
+
+  return (
+    <main>
+      <AutoRefresh seconds={30} />
+      <BattlesHead />
+      <Flash sp={sp} />
+
+      <Suspense
+        fallback={
+          <div className="battle-league" aria-busy="true" aria-label="Loading league">
+            <div className="battle-aside">
+              <section className="hero-card" aria-hidden="true" />
+            </div>
+            <section className="card" aria-hidden="true" />
+          </div>
+        }
+      >
+        <LeagueDetail entry={entry} ws={ws} canJoinNext={canJoinNext} />
+      </Suspense>
+    </main>
+  );
+}
+
+async function LeagueDetail({ entry, ws, canJoinNext }) {
   const [rows, board, nextLive] = await Promise.all([
     holdings(entry.id),
     leaderboard(entry.room_id),
@@ -49,11 +74,7 @@ export default async function LeaguePage({ searchParams }) {
   const coins = Number(entry.coins_awarded ?? 0).toLocaleString('en-US');
 
   return (
-    <main>
-      <AutoRefresh seconds={30} />
-      <BattlesHead />
-      <Flash sp={sp} />
-
+    <>
       <div className="battle-league">
         <div className="battle-aside">
           <StandingCard entry={entry} summary={summary} place={place} total={board.length} />
@@ -90,7 +111,7 @@ export default async function LeaguePage({ searchParams }) {
           <TierCards week={ws} live={nextLive} level={3} />
         </section>
       ) : null}
-    </main>
+    </>
   );
 }
 
