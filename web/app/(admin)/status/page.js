@@ -1,5 +1,8 @@
 // Reads the price cache the Railway worker writes to. Proves the full chain:
 // worker -> Postgres -> web. Renders fine with no database attached yet.
+// Reachable signed in or signed out.
+
+import { PageHead } from '../../../components/layout/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,13 +36,16 @@ function Status({ state, count, message }) {
   const tone = state === 'ok' && count > 0 ? 'ok' : state === 'error' ? 'bad' : 'wait';
 
   return (
-    <div className={`status ${tone}`}>
-      <span className="dot" />
-      <div>
-        <strong>{label}</strong>
-        {message ? <div className="msg">{message}</div> : null}
+    <section className={`card acct-status is-${tone}`} role="status">
+      <p className="eyebrow">Price cache status</p>
+      <div className="acct-status-line">
+        <span className="acct-status-dot" aria-hidden="true" />
+        <div className="acct-status-text">
+          <strong>{label}</strong>
+          {message ? <p className="acct-status-msg">{message}</p> : null}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -48,52 +54,50 @@ export default async function Page() {
 
   return (
     <main>
-      <header>
-        <p className="eyebrow">StockArena · Infrastructure</p>
-        <h1>Price cache</h1>
-        <p className="lede">
-          The worker on Railway polls quotes and writes them here. This page reads
-          the database directly — it never calls the data vendor.
-        </p>
-      </header>
+      <PageHead
+        eyebrow="StockArena · Infrastructure"
+        title="Price"
+        accent="cache"
+        sub="The worker on Railway polls quotes and writes them here. This page reads the database directly — it never calls the data vendor."
+      />
 
       <Status state={state} count={rows.length} message={message} />
 
       {rows.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Symbol</th>
-              <th className="num">Price</th>
-              <th>Updated</th>
-            </tr>
-          </thead>
-          <tbody>
+        <section className="card acct-prices-card">
+          <div className="card-head">
+            <h2>Cached prices</h2>
+          </div>
+          <ul className="rows acct-prices">
             {rows.map((r) => (
-              <tr key={r.symbol}>
-                <td className="sym">{r.symbol}</td>
-                <td className="num">
-                  {Number(r.price).toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </td>
-                <td className="when">
-                  {new Date(r.updated_at).toLocaleTimeString('en-US', {
-                    timeZone: 'America/New_York',
-                  })}{' '}
-                  ET
-                </td>
-              </tr>
+              <li key={r.symbol} className="row">
+                <span className="row-main">
+                  <strong>{r.symbol}</strong>
+                </span>
+                <span className="row-side">
+                  <span className="num">
+                    {Number(r.price).toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                  <span className="sub">
+                    {new Date(r.updated_at).toLocaleTimeString('en-US', {
+                      timeZone: 'America/New_York',
+                    })}{' '}
+                    ET
+                  </span>
+                </span>
+              </li>
             ))}
-          </tbody>
-        </table>
+          </ul>
+        </section>
       )}
 
-      <footer>
+      <p className="fineprint acct-foot">
         Next step: finalize the gameplay plan in <code>contextHistory.md</code>, then model
         leagues, entries, and positions.
-      </footer>
+      </p>
     </main>
   );
 }

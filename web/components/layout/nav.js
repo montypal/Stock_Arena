@@ -2,57 +2,66 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import Icon from './icons';
 
 const TABS = [
-  {
-    href: '/',
-    label: 'Home',
-    icon: <path d="M4 10.5 12 3.5l8 7M6 9.5V20h4.5v-5.5h3V20H18V9.5" />,
-  },
-  {
-    href: '/league',
-    label: 'Battles',
-    icon: (
-      <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3" />
-    ),
-  },
-  {
-    href: '/daily',
-    label: 'Daily',
-    icon: <path d="M5 5h11v13H5zM16 8h3v10H8M8 8.5h5M8 11.5h5M8 14.5h3" />,
-  },
-  {
-    href: '/progress',
-    label: 'Progress',
-    icon: <path d="M4 20h16M7.5 20v-5M12 20V6M16.5 20v-9" />,
-  },
-  {
-    href: '/profile',
-    label: 'Profile',
-    icon: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0" />,
-  },
+  { href: '/', label: 'Home', icon: 'home', match: ['/'] },
+  // Trading happens inside a battle, so /trade keeps the Battles tab lit.
+  { href: '/league', label: 'Battles', icon: 'battles', match: ['/league', '/trade'] },
+  { href: '/daily', label: 'Daily', icon: 'daily', match: ['/daily'] },
+  { href: '/progress', label: 'Progress', icon: 'progress', match: ['/progress'] },
+  { href: '/profile', label: 'Profile', icon: 'profile', match: ['/profile'] },
 ];
 
-function isActive(path, href) {
-  if (href === '/') return path === '/';
-  return path === href || path.startsWith(`${href}/`);
+function activeIndex(path) {
+  return TABS.findIndex((t) =>
+    t.match.some((m) => (m === '/' ? path === '/' : path === m || path.startsWith(`${m}/`)))
+  );
 }
 
+// Bottom tab bar (side rail on desktop). The active tab is marked by a single
+// liquid-glass lens that slides to it; while travelling it briefly stretches
+// (data-moving), which reads as fluid rather than a hard jump.
 export default function NavBar() {
   const path = usePathname() ?? '';
+  const index = activeIndex(path);
+  const [moving, setMoving] = useState(false);
+  const last = useRef(index);
+
+  useEffect(() => {
+    if (last.current === index) return undefined;
+    last.current = index;
+    setMoving(true);
+    const t = setTimeout(() => setMoving(false), 260);
+    return () => clearTimeout(t);
+  }, [index]);
+
   return (
-    <nav className="tabbar" aria-label="Main">
-      {TABS.map((t) => {
-        const active = isActive(path, t.href);
-        return (
-          <Link key={t.href} href={t.href} className={active ? 'tab active' : 'tab'} aria-current={active ? 'page' : undefined}>
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              {t.icon}
-            </svg>
-            <span>{t.label}</span>
-          </Link>
-        );
-      })}
+    <nav
+      className="tabbar"
+      aria-label="Main"
+      data-moving={moving ? 'true' : 'false'}
+      data-has-active={index >= 0 ? 'true' : 'false'}
+      style={{ '--i': Math.max(index, 0) }}
+    >
+      <div className="tabbar-track">
+        <span className="tab-glass" aria-hidden="true" />
+        {TABS.map((t, i) => {
+          const active = i === index;
+          return (
+            <Link
+              key={t.href}
+              href={t.href}
+              className={active ? 'tab active' : 'tab'}
+              aria-current={active ? 'page' : undefined}
+            >
+              <Icon name={t.icon} size={24} strokeWidth={active ? 2.1 : 1.8} />
+              <span>{t.label}</span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

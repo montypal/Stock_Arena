@@ -2,10 +2,13 @@ import { query, one, transaction } from '../db';
 import { money } from '../utils/format';
 
 export const TIERS = [
-  { tier: 1000, label: '1K League', short: '1K', multiplier: 1 },
-  { tier: 10000, label: '10K League', short: '10K', multiplier: 2 },
-  { tier: 100000, label: '100K League', short: '100K', multiplier: 4 },
+  { tier: 1000, label: '1K League', short: '1K', multiplier: 1, medal: '🥉', blurb: 'Entry level. $1,000 starting cash.' },
+  { tier: 10000, label: '10K League', short: '10K', multiplier: 2, medal: '🥈', blurb: 'Mid stakes. $10,000 starting cash.' },
+  { tier: 100000, label: '100K League', short: '100K', multiplier: 4, medal: '🥇', blurb: 'High roller. $100,000 starting cash.' },
 ];
+
+// First-place coins before the tier multiplier. Mirrors worker/game.py.
+export const WIN_COINS = 500;
 
 export function tierInfo(tier) {
   return TIERS.find((t) => t.tier === Number(tier)) ?? null;
@@ -76,6 +79,48 @@ export async function pastEntries(userId) {
     `${ENTRY_SELECT} WHERE e.user_id = $1 AND l.status = 'settled' ORDER BY e.week_start DESC LIMIT 20`,
     [userId]
   );
+}
+
+// Whether a league week (by its Monday) is already underway.
+export async function weekHasStarted(ws) {
+  const row = await one(
+    `SELECT now() >= (($1::date)::timestamp AT TIME ZONE 'America/New_York') AS started`,
+    [ws]
+  );
+  return row.started;
+}
+
+// Career record: settled leagues, wins, podiums, win rate, and the current
+// streak of consecutive weeks played (counting back from the latest entry).
+export async function careerStats(userId) {
+  const [totals, weeks] = await Promise.all([
+    one(
+      `SELECT count(*) FILTER (WHERE l.status = 'settled') AS played,
+              count(*) FILTER (WHERE e.final_rank = 1)      AS wins,
+              count(*) FILTER (WHERE e.final_rank <= 3)     AS podiums
+       FROM entries e JOIN leagues l ON l.id = e.league_id
+       WHERE e.user_id = $1`,
+      [userId]
+    ),
+    query('SELECT week_start FROM entries WHERE user_id = $1 ORDER BY week_start DESC LIMIT 60', [userId]),
+  ]);
+
+  let streak = 0;
+  let expected = null;
+  for (const { week_start } of weeks) {
+    const t = Date.parse(`${week_start}T00:00:00Z`);
+    if (expected !== null && t !== expected) break;
+    streak += 1;
+    expected = t - 7 * 24 * 60 * 60 * 1000;
+  }
+
+  return {
+    played: totals.played,
+    wins: totals.wins,
+    podiums: totals.podiums,
+    winRate: totals.played ? totals.wins / totals.played : 0,
+    streak,
+  };
 }
 
 export async function joinLeague(userId, tier) {
@@ -179,6 +224,7 @@ export async function leaderboard(roomId) {
     `SELECT * FROM (
        SELECT e.id AS entry_id, e.user_id, u.display_name, e.starting_balance,
               e.joined_at, e.final_rank, e.coins_awarded,
+              COUNT(p.symbol) AS stocks,
               COALESCE(e.final_value,
                        e.cash + COALESCE(SUM(COALESCE(p.shares * lp.price, p.cost_basis)), 0)) AS value
        FROM entries e

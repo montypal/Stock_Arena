@@ -1,0 +1,213 @@
+/* home screen styles. Owned by the home screen; shared pieces live in app/globals.css.
+   Mobile-first: phone base rules, then 768px (tablet) and 1100px (desktop, nav rail). */
+
+/* ================================================================ landing */
+/* Signed out. The shell keeps signed-out pages at 640px (phone) / 900px. */
+
+.app > main.home-landing {
+  gap: 36px;
+}
+
+.home-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding-top: 12px;
+  text-align: center;
+}
+
+.home-title {
+  font-size: clamp(30px, 10vw, 68px);
+  font-weight: 900;
+  line-height: 1.04;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--green);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
+}
+
+.home-title span {
+  display: block;
+}
+
+.home-title .home-title-lead {
+  color: var(--text);
+}
+
+.home-lede {
+  max-width: 38ch;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+
+.home-drop {
+  width: 100%;
+  max-width: 340px;
+}
+
+.home-how {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.home-steps {
+  width: 100%;
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.card.home-step {
+  gap: 8px;
+}
+
+.home-step-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.home-step-icon {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1.5px solid var(--edge-soft);
+  color: var(--green);
+}
+
+.home-step h3 {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ============================================================== dashboard */
+
+/* "Find a battle" is the one call to action on the screen. */
+.card.home-cta {
+  border-color: var(--edge-strong);
+}
+
+/* Full-bleed rows inside a padded card, so a tapped row highlights edge to edge. */
+.home-list {
+  margin-inline: -20px;
+}
+
+.home-list .row {
+  padding-inline: 20px;
+}
+
+/* Keep "100%" and "Win rate" inside a third of a phone screen. */
+.home-stats .stat-value {
+  font-size: clamp(20px, 6.2vw, 36px);
+}
+
+.home-stats .stat-label {
+  letter-spacing: 0.16em;
+}
+
+.home-room-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* The player's own row when they're outside the top five. */
+.board li.home-board-gap {
+  margin-top: 10px;
+}
+
+/* ================================================================= tablet */
+
+@media (min-width: 768px) {
+  .app > main.home-landing {
+    gap: 48px;
+  }
+
+  .home-hero {
+    gap: 24px;
+    padding-top: 40px;
+  }
+
+  .home-lede {
+    font-size: 19px;
+  }
+
+  .home-drop {
+    width: auto;
+    min-width: 280px;
+  }
+
+  .home-how {
+    gap: 18px;
+  }
+
+  .home-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .card.home-step {
+    padding: 22px;
+  }
+
+  /* Signed in: two equal columns -- standing, stocks, and orders on the
+     left; record tiles and the room on the right. Each column is about a
+     phone's width, so every card keeps the layout it was built for. */
+  .split.home-split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Numbers sized by viewport width would outgrow a half-width column. */
+  .home-split .big-number {
+    font-size: clamp(30px, 4.2vw, 44px);
+  }
+
+  .home-stats .stat-value {
+    font-size: clamp(22px, 3.2vw, 32px);
+  }
+}
+
+/* ================================================================ desktop */
+/* Signed in: .split puts standing, stocks, and orders on the left and the
+   record tiles plus room snapshot in a narrower right column. */
+
+@media (min-width: 1100px) {
+  .home-hero {
+    padding-top: 64px;
+  }
+
+  /* Back to the shared main/aside proportions now the nav rail is beside us. */
+  .split.home-split {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  }
+
+  /* The aside is ~300-430px wide beside the nav rail; size tiles to fit. */
+  .home-stats {
+    gap: 10px;
+  }
+
+  .home-stats .stat-tile {
+    min-height: 128px;
+    padding: 16px 6px;
+  }
+
+  .home-stats .stat-value {
+    font-size: clamp(20px, 1.9vw, 30px);
+  }
+}

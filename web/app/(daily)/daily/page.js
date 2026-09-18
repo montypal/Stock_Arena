@@ -36,21 +36,24 @@ export default async function DailyPage() {
   await requireUser();
   return (
     <main>
-      <PageHead eyebrow="Daily" title="Today in the Arena">
+      <PageHead eyebrow="Daily" title="Today in the" accent="Arena">
         <p className="muted small">A static placeholder feed. Real news integration comes later.</p>
       </PageHead>
-      {NEWS.map((n) => (
-        <article key={n.title} className="card">
-          <div className="card-head">
-            <span className="pill live">{n.tag}</span>
-            <span className="muted small">{n.time}</span>
-          </div>
-          <h2>{n.title}</h2>
-          <p className="muted small">
-            {n.source} · {n.blurb}
-          </p>
-        </article>
-      ))}
+      <div className="grid-2 acct-news">
+        {NEWS.map((n) => (
+          <article key={n.title} className="card acct-article">
+            <div className="card-head">
+              <span className="pill live">{n.tag}</span>
+              <span className="caption">{n.time}</span>
+            </div>
+            <h2 className="acct-article-title">{n.title}</h2>
+            <p className="acct-article-body">
+              <span className="acct-article-source">{n.source}</span>
+              <span className="muted small">{n.blurb}</span>
+            </p>
+          </article>
+        ))}
+      </div>
       <p className="fineprint">Placeholder content only — not real market news.</p>
     </main>
   );

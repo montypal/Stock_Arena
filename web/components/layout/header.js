@@ -1,0 +1,39 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import Icon from './icons';
+
+// Top bar on every screen: logo + wordmark, and on the right either the
+// player's coin balance (signed in) or a Log in button (signed out).
+export default function AppHeader({ coins }) {
+  const path = usePathname() ?? '';
+  const signedIn = coins !== null && coins !== undefined;
+
+  return (
+    <header className="app-header">
+      <div className="app-header-inner">
+        <Link href="/" className="brand" aria-label="StockArena home">
+          <span className="brand-tile">
+            <img src="/logo-mark.png" alt="" width={36} height={36} />
+          </span>
+          <span className="brand-name">
+            STOCK<span>ARENA</span>
+          </span>
+        </Link>
+
+        {signedIn ? (
+          <Link href="/progress" className="coin-chip" aria-label={`${Number(coins).toLocaleString()} coins`}>
+            <Icon name="coin" size={18} strokeWidth={2} />
+            {Number(coins).toLocaleString()}
+          </Link>
+        ) : path !== '/login' ? (
+          <Link href="/login" className="btn outline small">
+            <Icon name="zap" size={16} strokeWidth={2.2} />
+            Log in
+          </Link>
+        ) : null}
+      </div>
+    </header>
+  );
+}

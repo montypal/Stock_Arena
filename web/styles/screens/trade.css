@@ -1,0 +1,373 @@
+/* ==========================================================================
+   Trade screen: /trade (search + stock list) and /trade/[symbol] (quote,
+   position, buy/sell forms, pending orders). Owned by the trade screen;
+   shared pieces (cards, pills, fields, buttons) live in app/globals.css.
+   Mobile first, then 768px (tablet) and 1100px (desktop with nav rail).
+   Solid colours only; nothing here is decorative.
+   ========================================================================== */
+
+/* ------------------------------------------------------ /trade: heading */
+
+.trade-top {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.trade-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.trade-search-field {
+  position: relative;
+  display: block;
+}
+
+.trade-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 18px;
+  translate: 0 -50%;
+  color: var(--green-hi);
+  pointer-events: none;
+}
+
+.trade-search-field input {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  padding-left: 50px;
+  border-radius: 999px;
+  background: var(--surface);
+  border-color: var(--edge);
+}
+
+.trade-search-field input:focus {
+  border-color: var(--green);
+}
+
+.trade-count {
+  padding: 0 8px;
+  color: var(--text-soft);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7); /* sits on the moving gradient */
+  overflow-wrap: anywhere;
+}
+
+.trade-count a,
+.trade-note a,
+.trade-empty a {
+  color: var(--green-hi);
+  font-weight: 700;
+}
+
+/* --------------------------------------------------- /trade: stock list */
+/* Phones: divided rows inside one flush card. */
+
+.trade-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trade-list > li + li {
+  border-top: 1.5px solid var(--edge-soft);
+}
+
+.trade-stock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'sym price'
+    'name chg';
+  align-items: center;
+  gap: 4px 14px;
+  padding: 14px 20px;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.trade-stock:hover,
+.trade-stock:active {
+  background: var(--surface-3);
+}
+
+.trade-stock-sym {
+  grid-area: sym;
+  min-width: 0;
+  font-family: var(--display);
+  font-size: 15.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.trade-stock-name {
+  grid-area: name;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trade-stock-price {
+  grid-area: price;
+  justify-self: end;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.trade-stock .trade-chg {
+  grid-area: chg;
+  justify-self: end;
+}
+
+/* Day-change pill: tinted fill, edge in the text colour. */
+.trade-chg {
+  padding: 4px 10px;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-chg.up {
+  color: var(--up);
+  background: var(--up-bg);
+  border-color: var(--up);
+}
+
+.trade-chg.down {
+  color: var(--down);
+  background: var(--down-bg);
+  border-color: var(--down);
+}
+
+.trade-chg.flat {
+  color: var(--text-faint);
+}
+
+.trade-empty {
+  padding: 14px 20px;
+}
+
+/* ------------------------------------------------ /trade/[symbol]: quote */
+
+.trade-back {
+  align-self: flex-start;
+}
+
+.trade-quote {
+  gap: 14px;
+}
+
+.trade-quote-id {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.trade-quote h1 {
+  font-size: clamp(22px, 6.4vw, 30px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.trade-quote-price {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.trade-quote-price .caption {
+  margin-top: 4px;
+}
+
+/* The card gap already spaces the stats from the heading. */
+.trade-position .stats {
+  margin-top: 0;
+}
+
+/* ------------------------------------------ /trade/[symbol]: order forms */
+
+/* The wrapper is a direct <span> of .field, so reset the caption styling
+   globals.css gives those spans. */
+.field > .trade-money {
+  position: relative;
+  display: block;
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+
+.trade-money-sign {
+  position: absolute;
+  top: 50%;
+  left: 18px;
+  translate: 0 -50%;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--green-hi);
+  pointer-events: none;
+}
+
+.trade-money input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+  display: block;
+  padding-left: 42px;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-money input::-webkit-outer-spin-button,
+.trade-money input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.trade-note {
+  line-height: 1.5;
+}
+
+/* ================================================================ tablet */
+
+@media (min-width: 768px) {
+  /* Heading left, search right. */
+  .trade-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+    align-items: end;
+    gap: 20px 28px;
+  }
+
+  /* Stock list becomes a 2-column grid of solid tiles inside the card. */
+  .card.trade-board {
+    padding: 16px;
+  }
+
+  .trade-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .trade-list > li {
+    display: flex;
+    min-width: 0;
+  }
+
+  .trade-list > li + li {
+    border-top: 0;
+  }
+
+  .trade-stock {
+    flex: 1;
+    min-width: 0;
+    grid-template-areas:
+      'sym chg'
+      'name name'
+      'price price';
+    align-content: start;
+    gap: 6px 12px;
+    padding: 16px 18px 18px;
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+    border: 1.5px solid var(--edge-soft);
+  }
+
+  .trade-stock:hover,
+  .trade-stock:active {
+    background: var(--surface-3);
+    border-color: var(--edge-strong);
+  }
+
+  .trade-stock-sym {
+    font-size: 17px;
+  }
+
+  .trade-stock-price {
+    justify-self: start;
+    margin-top: 10px;
+    font-size: 22px;
+  }
+
+  .trade-empty {
+    padding: 6px;
+  }
+
+  /* Quote card: name left, price right. */
+  .trade-quote {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .trade-quote-price {
+    flex: none;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .trade-quote .big-number {
+    font-size: 46px;
+  }
+
+  /* Buy and sell side by side; pending orders span both. */
+  .col.trade-actions-sell {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trade-actions-sell > .trade-pending {
+    grid-column: 1 / -1;
+  }
+}
+
+/* =============================================================== desktop */
+
+@media (min-width: 1100px) {
+  .card.trade-board {
+    padding: 18px;
+  }
+
+  .trade-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  /* .split puts the quote + position on the left and the order column on
+     the right, so the order cards stack again. */
+  .col.trade-actions-sell {
+    display: flex;
+  }
+
+  .trade-quote {
+    padding: 28px 26px;
+  }
+
+  .trade-quote .big-number {
+    font-size: 52px;
+  }
+}

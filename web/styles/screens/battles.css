@@ -1,0 +1,495 @@
+/* battles screen styles. Owned by the battles screen; shared pieces live in app/globals.css.
+   Route: /league (app/(battles)/league/page.js), with components/battle/TierCards.js
+   and components/battle/LeagueBoard.js. Solid, opaque surfaces only.
+
+   Breakpoints (mobile first):
+     768px   tier cards split into details + "How it works"; leaderboard becomes a table
+     1100px  nav rail appears; the rail leaves ~760-1020px of content, so the
+             tablet arrangement holds until there is room for columns
+     1360px  content is >=1020px wide: three tier cards side by side, and the
+             standing card sits beside the leaderboard */
+
+/* Screen-reader-only text (row labels that the column headers cover visually). */
+.battle-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================================ tier cards */
+
+.battle-tiers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.card.battle-tier {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 16px;
+}
+
+.battle-tier-top {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'medal title pill'
+    'medal blurb blurb';
+  align-items: start;
+  column-gap: 14px;
+  row-gap: 4px;
+}
+
+.battle-medal {
+  grid-area: medal;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  border: 1.5px solid var(--edge-soft);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.battle-tier-title {
+  grid-area: title;
+  align-self: center;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.battle-tier-pill {
+  grid-area: pill;
+}
+
+.battle-tier-blurb {
+  grid-area: blurb;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-soft);
+}
+
+.battle-tier-meta {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-soft);
+}
+
+.battle-tier-meta li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.battle-tier-meta .battle-meta-live {
+  color: var(--green-hi);
+}
+
+.battle-how {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.battle-how-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.battle-how-head .eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+}
+
+.battle-cap {
+  padding: 5px 10px;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+}
+
+.battle-how-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.battle-how-list li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
+  font-size: 14.5px;
+  line-height: 1.4;
+  color: var(--text-soft);
+}
+
+.battle-how-list svg {
+  margin-top: 1px;
+  color: var(--green);
+}
+
+/* The button label carries the date range, so it uses a tighter setting
+   than a standard pill button to stay on one line in a narrow card. */
+.battle-join .btn {
+  padding: 0 16px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+/* ======================================================== league layout */
+
+.battle-league {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.battle-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.battle-final {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1.5px solid var(--gold);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.battle-final svg {
+  flex: none;
+  color: var(--gold);
+}
+
+/* ========================================================== leaderboard */
+
+.battle-board-card {
+  /* table columns from 768px: rank, player, value, P/L, return, stocks */
+  --battle-cols: 36px minmax(96px, 1.6fr) minmax(104px, 1.1fr) minmax(86px, 1fr)
+    minmax(62px, 0.75fr) minmax(58px, 0.6fr);
+}
+
+.battle-board-card.is-final {
+  /* ... plus coins won once the league has settled */
+  --battle-cols: 36px minmax(80px, 1.4fr) minmax(104px, 1.1fr) minmax(86px, 1fr)
+    minmax(62px, 0.75fr) minmax(58px, 0.6fr) minmax(54px, 0.6fr);
+}
+
+.battle-board-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.battle-tile {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1.5px solid var(--edge-soft);
+  color: var(--gold);
+}
+
+.battle-board-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.battle-board-title h2 {
+  text-transform: uppercase;
+}
+
+.battle-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.battle-board-head {
+  display: none;
+}
+
+/* Phones: two lines per player. */
+.board.battle-board li {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 6px;
+  padding: 12px 14px;
+}
+
+.battle-board .place {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.battle-who {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.battle-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-who .you {
+  flex: none;
+}
+
+.battle-value {
+  grid-column: 3;
+  grid-row: 1;
+  font-family: var(--display);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.battle-stats {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  font-size: 13px;
+}
+
+.battle-pl,
+.battle-extra {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+}
+
+.battle-pl {
+  column-gap: 5px;
+}
+
+.battle-extra {
+  margin-left: auto;
+}
+
+.battle-cell {
+  white-space: nowrap;
+}
+
+.battle-unit {
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.battle-board-note {
+  font-size: 14.5px;
+}
+
+/* ========================================================= next week */
+
+.battle-next {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.battle-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.battle-section-head h2 {
+  font-size: clamp(22px, 6vw, 28px);
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
+}
+
+.battle-section-sub {
+  font-size: 15px;
+  color: var(--text-soft);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+
+/* ================================================================ 768px */
+
+@media (min-width: 768px) {
+  .battle-tiers,
+  .battle-league,
+  .battle-aside {
+    gap: 20px;
+  }
+
+  /* One tier per row, split into details (left) and the "How it works"
+     panel (right), so three cards never leave an orphan. */
+  .card.battle-tier {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'top how'
+      'meta how'
+      'join how';
+    gap: 18px 24px;
+    padding: 24px;
+  }
+
+  .battle-tier-top {
+    grid-area: top;
+  }
+
+  .battle-tier-meta {
+    grid-area: meta;
+  }
+
+  .battle-how {
+    grid-area: how;
+  }
+
+  .battle-join {
+    grid-area: join;
+    align-self: end;
+  }
+
+  .battle-board-top {
+    gap: 16px;
+  }
+
+  /* Leaderboard becomes a table: a header row and one grid row per player. */
+  .battle-board-head {
+    display: grid;
+    grid-template-columns: var(--battle-cols);
+    column-gap: 10px;
+    padding: 0 15.5px;
+    font-family: var(--display);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .battle-board-head span:first-child {
+    text-align: center;
+  }
+
+  .battle-board-head span:nth-child(n + 3) {
+    text-align: right;
+  }
+
+  .board.battle-board li {
+    grid-template-columns: var(--battle-cols);
+    column-gap: 10px;
+    row-gap: 0;
+  }
+
+  .battle-board .place,
+  .battle-who,
+  .battle-value,
+  .battle-stats {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  /* The stat groups' cells become columns of the row grid. */
+  .battle-stats,
+  .battle-pl,
+  .battle-extra {
+    display: contents;
+  }
+
+  .battle-cell {
+    font-size: 14px;
+    text-align: right;
+  }
+
+  .battle-m {
+    display: none;
+  }
+}
+
+/* =============================================================== 1360px */
+
+@media (min-width: 1360px) {
+  /* All three tiers side by side, each card stacked vertically with the
+     join buttons lined up along the bottom. */
+  .battle-tiers {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .card.battle-tier {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+      'top'
+      'meta'
+      'how'
+      'join';
+    gap: 16px;
+    padding: 22px;
+  }
+
+  /* Standing card (left, stays in view while scrolling) beside the
+     wider leaderboard table. */
+  .battle-league {
+    grid-template-columns: 380px minmax(0, 1fr);
+  }
+
+  .battle-aside {
+    position: sticky;
+    top: calc(var(--header-h) + env(safe-area-inset-top) + 24px);
+  }
+}

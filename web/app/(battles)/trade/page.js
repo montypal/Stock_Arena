@@ -1,70 +1,74 @@
 import Link from 'next/link';
 import { requireUser } from '../../../lib/db/auth';
 import { currentEntry, marketOpen, stocks } from '../../../lib/trading/game';
-import { first, money, pct, tone } from '../../../lib/utils/format';
+import { first } from '../../../lib/utils/format';
 import AutoRefresh from '../../../components/layout/refresh';
 import { Flash, PageHead } from '../../../components/layout/ui';
+import SearchForm from '../../../components/trade/SearchForm';
+import StockList from '../../../components/trade/StockList';
 
 export default async function TradePage({ searchParams }) {
   const sp = await searchParams;
   const user = await requireUser();
-  const q = first(sp?.q) ?? '';
+  const q = String(first(sp?.q) ?? '').trim();
   const [entry, list] = await Promise.all([currentEntry(user.id), stocks(q)]);
   const open = marketOpen();
 
   return (
-    <main>
+    <main className="trade-market">
       <AutoRefresh seconds={60} />
-      <PageHead eyebrow={open ? 'Market open' : 'Market closed'} title="Trade" />
+
+      <div className="trade-top">
+        <PageHead
+          eyebrow={open ? 'Market open' : 'Market closed'}
+          live={open}
+          title="Trade"
+          sub="30 stocks at live prices. Orders fill at the next price update."
+        />
+        <div className="trade-toolbar">
+          <SearchForm q={q} />
+          {q && list.length > 0 ? (
+            <p className="caption trade-count">
+              {list.length} {list.length === 1 ? 'result' : 'results'} for “{q}” ·{' '}
+              <Link href="/trade">Clear search</Link>
+            </p>
+          ) : null}
+        </div>
+      </div>
+
       <Flash sp={sp} />
 
       {!entry ? (
-        <p className="flash">
+        <p className="flash trade-note">
           <Link href="/league">Join a league</Link> to start trading.
         </p>
       ) : !entry.trading_open ? (
-        <p className="flash">Trading is closed for this league. Next week opens on the League tab.</p>
+        <p className="flash trade-note">
+          Trading is closed for this league. <Link href="/league">Join the next one</Link> on the
+          Battles tab.
+        </p>
       ) : null}
 
-      <form className="search" role="search">
-        <input
-          type="search"
-          name="q"
-          defaultValue={q}
-          placeholder="Search by name or symbol"
-          aria-label="Search stocks"
-          autoComplete="off"
-        />
-      </form>
-
-      <section className="card flush">
+      <section className="card flush trade-board" aria-label="Stocks">
         {list.length === 0 ? (
-          <p className="empty">No stocks match “{q}”.</p>
+          <p className="empty trade-empty">
+            {q ? (
+              <>
+                No stocks match “{q}”. <Link href="/trade">Show all stocks</Link>
+              </>
+            ) : (
+              'No stocks are listed right now.'
+            )}
+          </p>
         ) : (
-          <ul className="rows">
-            {list.map((s) => {
-              const change = s.price != null && s.prev_close ? s.price / s.prev_close - 1 : null;
-              return (
-                <li key={s.symbol}>
-                  <Link href={`/trade/${s.symbol}`} className="row">
-                    <span className="row-main">
-                      <strong>{s.symbol}</strong>
-                      <span className="muted small">{s.name}</span>
-                    </span>
-                    <span className="row-side">
-                      <span className="num">{s.price != null ? money(s.price) : '—'}</span>
-                      {change != null ? (
-                        <span className={`num small ${tone(change)}`}>{pct(change)}</span>
-                      ) : null}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <StockList stocks={list} />
         )}
       </section>
-      <p className="fineprint">Change is versus the previous close. Prices update about once a minute while the market is open.</p>
+
+      <p className="fineprint">
+        Change is versus the previous close. Prices update about once a minute while the market is
+        open.
+      </p>
     </main>
   );
 }

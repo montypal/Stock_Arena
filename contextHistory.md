@@ -179,6 +179,21 @@ If an old update says something different from the current plan, the current pla
 
 The code change and its corresponding `contextHistory.md` update should normally be part of the same commit when practical.
 
+**17. Real players only — no bots or fake people.**
+
+Everyone a player competes against must be a real person with a real account who joined through the app. On every change to the game, check that this is still true.
+
+Never:
+
+* create bot, fake, test, seed, sample, or demo player accounts in the production database
+* add simulated or computer-controlled players to leagues, rooms, duels, or leaderboards
+* fill empty rooms or leaderboards with made-up players to make them look busy
+* show invented people or names anywhere a player can see them — including example leaderboards, mock screens, placeholder copy, previews, and screenshots shared with collaborators
+
+If a room is empty or small, show it as empty or small. Test accounts, if ever needed, must never be placed in a real league and must be removed afterwards.
+
+If any existing bot, fake, or sample player is found, remove it (database changes still follow rule 9) and record it in `## Updates`.
+
 ### Completion Checklist
 
 Before considering a meaningful task complete, verify:
@@ -196,6 +211,7 @@ Before considering a meaningful task complete, verify:
 * [ ] No destructive Git operation was performed.
 * [ ] `contextHistory.md` was updated.
 * [ ] The update accurately describes what actually happened.
+* [ ] Every player in leagues, rooms, and leaderboards is a real user — no bots, fake, sample, or demo people were added anywhere (rule 17).
 
 ### Stop and Ask When
 
@@ -210,6 +226,7 @@ An agent should stop and ask for clarification when:
 * a major architecture change appears necessary
 * the agent cannot determine which implementation is authoritative
 * the requested behavior would contradict the current project plan
+* a change would add, simulate, or display players who are not real users
 
 > Project location: `C:\Users\jaxzc.JACKSON\OneDrive\Desktop\Coding\StockArena` (cloned from `https://github.com/montypal/Stock_Arena.git`, branch `main`).
 
@@ -399,6 +416,7 @@ Within each league tier (1K / 10K / 100K), there is a **live leaderboard** showi
 
 * Users move up and down in real time relative to other players in their tier
 * This creates the core competitive tension of the app — you're not just watching your own portfolio, you're watching your rank change against everyone else
+* **Every player on a leaderboard is a real person with a real account.** There are no bots, simulated opponents, or filler players — an empty or small room is shown as it is (see Mandatory Agent Rule 17)
 
 ## End of Week: Settlement & Winning
 
@@ -616,5 +634,20 @@ Green-black liquid-glass mobile UI overhaul + removed signup page UI at Jackson'
 * Restyled `web/app/globals.css` to green-black gradient + liquid glass (blur 18px/saturate 140%, translucent surfaces, green glow primary); class names preserved. Profile adds achievements icon grid (derived from history/wins/podiums) + notifications placeholder; trading/league logic untouched in `worker/` and `web/lib/trading/game.js`.
 * Verified: `cmd /c npm run build` in `web/` green — routes `/`, `/daily`, `/league`, `/login`, `/profile`, `/progress`, `/status`, `/trade`, `/trade/[symbol]`, no `/signup`; `Select-String /signup` across `web/app+components+lib` = zero hits. LSP diagnostics unavailable (daemon unreachable), build used as evidence. `web/package-lock.json` again left untracked.
 * Follow-up: visual QA on a phone viewport (tabbar spacing, glass contrast), decide if logged-out users should see tabs, wire real Daily news + real achievements/notifications, commit + push when Jackson approves (left uncommitted per no-commit rule).
+
+---
+
+Aarav — Claude Code 9:38 PM 9/17/26 PDT
+
+Redesign pass on top of Jackson's `f2f3aad` + added Mandatory Agent Rule 17 (real players only), both at Aarav's request. Pushed as an in-progress snapshot because Aarav asked to push immediately; a follow-up commit will finish the screens.
+
+* **Base + conflict handling:** fetched first and found Jackson's three new commits (`319cb4e` feature-based restructure, `c53912e` new rules, `f2f3aad` green-black UI) conflicting with Aarav/Claude's own *unpushed* web restructure. Stopped and asked per rule 3; Aarav chose Jackson's version. Claude's restructure was set aside with `git stash push -u` (stash "Aarav/Claude: unpushed web restructure…", recoverable, nothing deleted), then `git pull --ff-only`. Jackson's structure, routes, 5 tabs, and signup removal are kept as-is.
+* **Rule 17 — real players only:** added to Mandatory Agent Rules, the Completion Checklist, Stop-and-Ask, and the App Overview leaderboard section. No bots existed: `git grep` across code and history found nothing that creates, seeds, or simulates players (only real users joining via `join`). The names Aarav saw ("Marcus", "Sarah") were sample rows in Claude's *local* design-preview page, never in the app or database; they were removed from that preview. The production `users` table was not inspected (no DB credentials on this machine).
+* **Design system (`web/app/globals.css`, rewritten):** animated green/black gradient on every screen (two fixed `body::before/::after` layers animating transform/opacity only; paused under `prefers-reduced-motion`); all cards/containers now solid and opaque with 1.5px edges (removed the translucent/backdrop-blur surfaces); no decorative shapes; Orbitron display + Space Grotesk body via `next/font`; mobile-first with 768px and 1100px breakpoints (desktop: nav becomes a left rail, `.split` two-column layouts).
+* **Navigation (`components/layout/nav.js`):** same 5 tabs; the active tab is now a single liquid-glass lens (frosted blur, specular sheen, refraction tints) that slides between tabs with a brief fluid stretch; Battles also lights up on `/trade`. New `components/layout/header.js` (logo + coin balance / Log in), `components/layout/icons.js`, and `StatTile`/`ProgressBar` in `components/layout/ui.js`. Logo mark and app icons restored from the stash into `web/public/` and `web/app/`.
+* **Data helpers:** `lib/trading/game.js` — `TIERS` gain `medal`/`blurb`, `WIN_COINS`, `weekHasStarted()`, `careerStats()` (wins, podiums, win rate, weekly streak), and leaderboard rows now include `stocks` (positions held). `lib/utils/format.js` — `weekRange`, `timeUntil`, `progress`. No worker or schema changes.
+* **Screens (in progress, by a parallel agent workflow on the shared system):** Battles = browse/join tier cards, then the joined league's leaderboard with per-player value, P/L, return %, stocks held; holdings + pending orders move to Home; Trade, Daily, Progress, Profile, Login, Status restyled. Per-screen CSS in `web/styles/screens/{home,battles,trade,account}.css`. At push time three screen groups were built and under review and Battles was still being built.
+* **Verification:** no Node on this machine, so no `next build` here. Gate used: a static checker (parses every JS/JSX file, resolves every import/export, `'use server'` exports, CSS brace balance, and the redesign rules — no translucent backgrounds, `backdrop-filter`, or decorative pseudo-elements in screen CSS) — all passed on this snapshot. Foundation visually checked in a local HTML harness at 375px and 1280px (gradient drift, solid cards, lens sliding, desktop rail). Vercel's build is the first real compile.
+* **Follow-up:** finish + review the screens and push; confirm the Vercel build; Jackson to smoke-test with `npm run build` locally if possible; Aarav to confirm the production `users` table contains only real people.
 
 ---

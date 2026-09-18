@@ -3,6 +3,8 @@ import { pastEntries, tierInfo } from '../../../lib/trading/game';
 import { money, ordinal, signedMoney, tone, weekLabel } from '../../../lib/utils/format';
 import { logout } from '../../../lib/actions';
 import { PageHead } from '../../../components/layout/ui';
+import Icon from '../../../components/layout/icons';
+import CoinsCard from '../../../components/profile/CoinsCard';
 
 const ACH_DEFS = [
   {
@@ -53,6 +55,11 @@ const NOTIFS = [
   { title: 'Market opens 9:30 AM ET', sub: 'Queued orders fill when trading resumes.' },
 ];
 
+// Colour for a finishing place: gold / silver / bronze for the podium.
+function placeTone(rank) {
+  return rank === 1 ? 'p1' : rank === 2 ? 'p2' : rank === 3 ? 'p3' : '';
+}
+
 export default async function ProfilePage() {
   const user = await requireUser();
   const history = await pastEntries(user.id);
@@ -71,106 +78,133 @@ export default async function ProfilePage() {
     hot: topHalf >= 1,
     loyal: podiums >= 3,
   };
+  const unlockedCount = Object.values(unlocked).filter(Boolean).length;
 
   return (
-    <main>
+    <main className="acct-profile">
       <PageHead eyebrow="Profile" title={user.display_name} />
 
-      <section className="hero-card">
-        <p className="eyebrow">Coins</p>
-        <p className="big-number">{Number(user.coins).toLocaleString()}</p>
-        <p className="muted small">Earned by finishing leagues. Coins are for in-game rewards only.</p>
-        <dl className="stats">
-          <div>
-            <dt>Leagues</dt>
-            <dd>{history.length}</dd>
-          </div>
-          <div>
-            <dt>Wins</dt>
-            <dd>{wins}</dd>
-          </div>
-          <div>
-            <dt>Podiums</dt>
-            <dd>{podiums}</dd>
-          </div>
-        </dl>
-      </section>
+      <div className="split">
+        <div className="col acct-profile-main">
+          <section className="card acct-ach-card">
+            <div className="card-head">
+              <h2>Achievements</h2>
+              <span className="caption">
+                {unlockedCount} of {ACH_DEFS.length} unlocked
+              </span>
+            </div>
+            <ul className="acct-ach-grid">
+              {ACH_DEFS.map((a) => {
+                const on = unlocked[a.id];
+                return (
+                  <li key={a.id} className={on ? 'acct-ach is-on' : 'acct-ach is-off'}>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="26"
+                      height="26"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      {a.icon}
+                    </svg>
+                    <span className="acct-ach-text">
+                      <span className="acct-ach-label">{a.label}</span>
+                      <span className="acct-ach-state">{on ? 'Unlocked' : 'Locked'}</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
 
-      <section className="card">
-        <div className="card-head">
-          <h2>Achievements</h2>
-          <span className="muted small">
-            {Object.values(unlocked).filter(Boolean).length} of {ACH_DEFS.length} unlocked
-          </span>
+          <section className="card acct-history-card">
+            <div className="card-head">
+              <h2>Past leagues</h2>
+              {history.length ? (
+                <span className="caption">
+                  {history.length} {history.length === 1 ? 'league' : 'leagues'}
+                </span>
+              ) : null}
+            </div>
+            {history.length === 0 ? (
+              <p className="empty">Your results show up here after your first league ends.</p>
+            ) : (
+              <ul className="rows">
+                {history.map((e) => {
+                  const profit = Number(e.final_value) - Number(e.starting_balance);
+                  return (
+                    <li key={e.id} className="row">
+                      <span className="row-main">
+                        <strong className={`acct-place ${placeTone(e.final_rank)}`}>
+                          {e.final_rank ? ordinal(e.final_rank) : '—'} of {e.room_size}
+                        </strong>
+                        <span className="acct-row-note">
+                          {tierInfo(e.tier)?.label} · week of {weekLabel(e.week_start)}
+                        </span>
+                      </span>
+                      <span className="row-side">
+                        <span className={`num ${tone(profit)}`}>{signedMoney(profit)}</span>
+                        <span className="acct-row-note num">{money(e.final_value)}</span>
+                        <span className="acct-row-note num gold">
+                          +{Number(e.coins_awarded ?? 0).toLocaleString()} coins
+                        </span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
         </div>
-        <ul className="ach-grid">
-          {ACH_DEFS.map((a) => {
-            const on = unlocked[a.id];
-            return (
-              <li key={a.id} className={on ? 'ach unlocked' : 'ach locked'}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  {a.icon}
-                </svg>
-                <span>{a.label}</span>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
 
-      <section className="card">
-        <h2>Past leagues</h2>
-        {history.length === 0 ? (
-          <p className="empty">Your results show up here after your first league ends.</p>
-        ) : (
-          <ul className="rows">
-            {history.map((e) => {
-              const profit = Number(e.final_value) - Number(e.starting_balance);
-              return (
-                <li key={e.id} className="row">
+        <div className="col acct-profile-side">
+          <CoinsCard coins={user.coins}>
+            <dl className="stats">
+              <div>
+                <dt>Leagues</dt>
+                <dd>{history.length}</dd>
+              </div>
+              <div>
+                <dt>Wins</dt>
+                <dd>{wins}</dd>
+              </div>
+              <div>
+                <dt>Podiums</dt>
+                <dd>{podiums}</dd>
+              </div>
+            </dl>
+          </CoinsCard>
+
+          <section className="card acct-notifs-card">
+            <div className="card-head">
+              <h2>Notifications</h2>
+              <span className="pill">Placeholder</span>
+            </div>
+            <ul className="rows">
+              {NOTIFS.map((n) => (
+                <li key={n.title} className="row">
                   <span className="row-main">
-                    <strong>
-                      {ordinal(e.final_rank)} of {e.room_size}
-                    </strong>
-                    <span className="muted small">
-                      {tierInfo(e.tier)?.label} · week of {weekLabel(e.week_start)}
-                    </span>
-                  </span>
-                  <span className="row-side">
-                    <span className={`num ${tone(profit)}`}>{signedMoney(profit)}</span>
-                    <span className="num small muted">
-                      {money(e.final_value)} · +{Number(e.coins_awarded ?? 0).toLocaleString()} coins
-                    </span>
+                    <strong>{n.title}</strong>
+                    <span className="muted small">{n.sub}</span>
                   </span>
                 </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+              ))}
+            </ul>
+          </section>
 
-      <section className="card">
-        <div className="card-head">
-          <h2>Notifications</h2>
-          <span className="muted small">Placeholder</span>
+          <form action={logout} className="acct-logout">
+            <button className="btn ghost block" type="submit">
+              <Icon name="logout" size={18} strokeWidth={2} />
+              Log out
+            </button>
+          </form>
         </div>
-        <ul className="rows">
-          {NOTIFS.map((n) => (
-            <li key={n.title} className="row">
-              <span className="row-main">
-                <strong>{n.title}</strong>
-                <span className="muted small">{n.sub}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <form action={logout}>
-        <button className="btn ghost block" type="submit">
-          Log out
-        </button>
-      </form>
+      </div>
     </main>
   );
 }
