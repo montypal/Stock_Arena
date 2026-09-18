@@ -65,8 +65,38 @@ export async function currentUser() {
   );
 }
 
+// Signed-out visitors go to the landing page, which signs this device in.
 export async function requireUser() {
   const user = await currentUser();
-  if (!user) redirect('/login');
+  if (!user) redirect('/');
   return user;
+}
+
+// ------------------------------------------------------------ device identity
+// TEMPORARY, for testing while the login page is removed (9/17/26). Each
+// browser keeps a random device id in localStorage (components/auth/
+// DeviceEntry.js). The server stores only a sha256 of it, so the users table
+// alone can't be used to sign in as anyone. Every device account is a real
+// person who chose their own player name (contextHistory rule 17).
+
+const DEVICE_ID = /^[A-Za-z0-9-]{32,64}$/;
+
+export function validDeviceId(id) {
+  return typeof id === 'string' && DEVICE_ID.test(id);
+}
+
+export async function userForDevice(deviceId) {
+  if (!validDeviceId(deviceId)) return null;
+  return one('SELECT id, display_name FROM users WHERE device_hash = $1', [digest(deviceId)]);
+}
+
+// password_hash 'device' can never pass verifyPassword, so device accounts
+// can't be reached through the (currently removed) password login.
+export async function createDeviceUser(deviceId, name) {
+  return one(
+    `INSERT INTO users (username, display_name, password_hash, device_hash)
+     VALUES ($1, $2, 'device', $3)
+     RETURNING id`,
+    [name.toLowerCase(), name, digest(deviceId)]
+  );
 }

@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation';
 import Icon from './icons';
 
 // Top bar on every screen: logo + wordmark, and on the right either the
-// player's coin balance (signed in) or a Log in button (signed out).
+// player's coin balance (signed in) or a Drop in button that jumps to the
+// device sign-in on the landing page (signed out; no login page while testing).
 export default function AppHeader({ coins }) {
   const path = usePathname() ?? '';
   const signedIn = coins !== null && coins !== undefined;
@@ -27,11 +28,11 @@ export default function AppHeader({ coins }) {
             <Icon name="coin" size={18} strokeWidth={2} />
             {Number(coins).toLocaleString()}
           </Link>
-        ) : path !== '/login' ? (
-          <Link href="/login" className="btn outline small">
+        ) : path === '/' ? (
+          <a href="#join" className="btn outline small">
             <Icon name="zap" size={16} strokeWidth={2.2} />
-            Log in
-          </Link>
+            Drop in
+          </a>
         ) : null}
       </div>
     </header>

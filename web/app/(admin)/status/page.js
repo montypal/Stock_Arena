@@ -34,9 +34,11 @@ function Status({ state, count, message }) {
   }[state];
 
   const tone = state === 'ok' && count > 0 ? 'ok' : state === 'error' ? 'bad' : 'wait';
+  // Glass has no border: the state shows as a tinted rim on the card.
+  const rim = { ok: 'rim-ok', bad: 'rim-bad', wait: 'rim-gold' }[tone];
 
   return (
-    <section className={`card acct-status is-${tone}`} role="status">
+    <section className={`card acct-status is-${tone} ${rim}`} role="status">
       <p className="eyebrow">Price cache status</p>
       <div className="acct-status-line">
         <span className="acct-status-dot" aria-hidden="true" />
@@ -68,7 +70,7 @@ export default async function Page() {
           <div className="card-head">
             <h2>Cached prices</h2>
           </div>
-          <ul className="rows acct-prices">
+          <ul className="acct-list acct-prices">
             {rows.map((r) => (
               <li key={r.symbol} className="row">
                 <span className="row-main">
@@ -94,9 +96,8 @@ export default async function Page() {
         </section>
       )}
 
-      <p className="fineprint acct-foot">
-        Next step: finalize the gameplay plan in <code>contextHistory.md</code>, then model
-        leagues, entries, and positions.
+      <p className="fineprint">
+        Read-only: every visit re-reads the latest cached price per symbol. Times are US Eastern.
       </p>
     </main>
   );

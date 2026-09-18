@@ -1,9 +1,16 @@
-import Link from 'next/link';
 import Icon from '../layout/icons';
+import DeviceEntry from '../auth/DeviceEntry';
 import { TIERS } from '../../lib/trading/game';
 
-// Signed-out home: what StockArena is, one way in (Log in -- there is no
-// sign-up page), and the three steps of a league week.
+// Signed-out home: what StockArena is, one way in, and the three steps of a
+// league week. There is no login or sign-up page while testing: the way in is
+// the device sign-in (DeviceEntry, anchored at #join), where a real person
+// picks the player name everyone else sees. "Drop in" here and in the header
+// jump to it.
+//
+// The hero text sits straight on the moving background (home.css gives it a
+// brighter colour and a dark halo so it stays readable); the status pill is
+// its own small piece of glass.
 //
 // open - whether the US market is open right now (marketOpen())
 export default function Landing({ open }) {
@@ -23,9 +30,9 @@ export default function Landing({ open }) {
   return (
     <main className="home-landing">
       <section className="home-hero" aria-labelledby="home-hero-title">
-        <p className={open ? 'pill live' : 'pill'}>
+        <p className={open ? 'pill live glass rim-accent home-status' : 'pill glass home-status'}>
           {open ? <span className="live-dot" aria-hidden="true" /> : null}
-          {open ? 'Markets open' : 'Markets closed'}
+          {open ? 'Market open' : 'Market closed'}
         </p>
 
         <h1 id="home-hero-title" className="home-title">
@@ -38,11 +45,16 @@ export default function Landing({ open }) {
           leaderboard.
         </p>
 
-        <Link href="/login" className="btn primary xl home-drop">
+        <a href="#join" className="btn primary xl home-drop">
           <Icon name="zap" size={20} strokeWidth={2.2} />
           Drop in
-        </Link>
+        </a>
+        <p className="home-note">No password needed while we&apos;re testing.</p>
       </section>
+
+      <div className="home-join">
+        <DeviceEntry />
+      </div>
 
       <section className="home-how" aria-labelledby="home-how-title">
         <h2 id="home-how-title" className="eyebrow">
@@ -64,7 +76,7 @@ export default function Landing({ open }) {
         </ol>
       </section>
 
-      <p className="fineprint">
+      <p className="fineprint home-fineprint">
         No real money or real shares, ever. StockArena is a game, not investment advice.
       </p>
     </main>

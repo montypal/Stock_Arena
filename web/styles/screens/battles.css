@@ -1,13 +1,24 @@
 /* battles screen styles. Owned by the battles screen; shared pieces live in app/globals.css.
    Route: /league (app/(battles)/league/page.js), with components/battle/TierCards.js
-   and components/battle/LeagueBoard.js. Solid, opaque surfaces only.
+   and components/battle/LeagueBoard.js.
+
+   Liquid glass: the tier cards, the leaderboard card and the "league is
+   final" banner are frosted glass containers (.card / .glass from
+   globals.css). Everything inside them is clear inner glass: the medal and
+   leaderboard tiles, the "How it works" .panel and the leaderboard rows
+   (.board li). Emphasis is a tinted rim (.rim-gold on the final banner),
+   never a border, because glass has none. The Join buttons are
+   <SubmitButton> glass capsules and the Trade link is a .btn, so hover
+   lift, pointer light, press and focus ring come from the shared button
+   styles.
 
    Breakpoints (mobile first):
      768px   tier cards split into details + "How it works"; leaderboard becomes a table
-     1100px  nav rail appears; the rail leaves ~760-1020px of content, so the
-             tablet arrangement holds until there is room for columns
-     1360px  content is >=1020px wide: three tier cards side by side, and the
-             standing card sits beside the leaderboard */
+     1100px  nav rail appears (~760-1020px of content): three tier cards side by
+             side, each with the medal and pill on one row and the title below
+     1360px  content is >=1020px wide: roomier tier cards, and the standing card
+             sits beside the leaderboard (at 1100-1359 there is not room for the
+             standing card's $100,000.00 plus a 7-column table, so they stack) */
 
 /* Screen-reader-only text (row labels that the column headers cover visually). */
 .battle-sr {
@@ -49,6 +60,8 @@
   row-gap: 4px;
 }
 
+/* Inner-glass lens around the tier's medal (same material as the brand
+   tile in the header). */
 .battle-medal {
   grid-area: medal;
   width: 52px;
@@ -56,8 +69,10 @@
   display: grid;
   place-items: center;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
-  border: 1.5px solid var(--edge-soft);
+  background: var(--glass-sheen), var(--inner-2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 0 0 1px var(--inner-line);
   font-size: 26px;
   line-height: 1;
 }
@@ -84,6 +99,35 @@
   color: var(--text-soft);
 }
 
+/* Narrow cards (phones under 360px, and the three-up desktop grid): the
+   title gets its own full-width row under the medal and pill, so
+   "$100K League" never has to squeeze between them. */
+@media (max-width: 359.98px), (min-width: 1100px) {
+  .battle-tier-top {
+    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-areas:
+      'medal pill'
+      'title title'
+      'blurb blurb';
+    align-items: center;
+    row-gap: 4px;
+  }
+
+  .battle-medal {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+  }
+
+  .battle-tier-pill {
+    justify-self: end;
+  }
+
+  .battle-tier-title {
+    margin-top: 10px;
+  }
+}
+
 .battle-tier-meta {
   list-style: none;
   padding: 0;
@@ -107,10 +151,15 @@
   color: var(--green-hi);
 }
 
-.battle-how {
+/* "How it works": the shared .panel (inner glass: --inner fill and an
+   --inner-line edge), with a top highlight so it reads as a pane set into
+   the card. */
+.panel.battle-how {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  background: var(--glass-sheen), var(--inner);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .battle-how-head {
@@ -180,15 +229,20 @@
   min-width: 0;
 }
 
-.battle-final {
+/* Blur, rim, and shadow come from the shared .glass class in the JSX, like
+   every other container that sits directly on the background; .rim-gold
+   tints the rim, and the glass gets a faint gold wash (as .flash.ok does
+   with green). */
+.glass.battle-final {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   padding: 16px 18px;
   border-radius: var(--radius-md);
-  background: var(--surface);
-  border: 1.5px solid var(--gold);
-  box-shadow: var(--shadow);
+  background:
+    var(--glass-sheen),
+    linear-gradient(0deg, rgba(247, 203, 77, 0.1), rgba(247, 203, 77, 0.1)),
+    var(--glass-tint);
   color: var(--text);
   font-size: 15px;
   line-height: 1.45;
@@ -213,26 +267,38 @@
     minmax(62px, 0.75fr) minmax(58px, 0.6fr) minmax(54px, 0.6fr);
 }
 
+/* Phones: a slightly smaller tile and title so "Leaderboard" and the
+   "Final" pill share one row at 360px; on narrower screens the pill wraps
+   to its own row instead of running into the title. */
 .battle-board-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
+  gap: 10px 12px;
 }
 
+.battle-board-top .pill {
+  margin-left: auto;
+  padding: 5px 10px;
+}
+
+/* Inner-glass tile for the leaderboard's labelling icon. */
 .battle-tile {
-  width: 46px;
-  height: 46px;
+  width: 42px;
+  height: 42px;
   flex: none;
   display: grid;
   place-items: center;
   border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  border: 1.5px solid var(--edge-soft);
+  background: var(--glass-sheen), var(--inner-2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 0 0 1px var(--inner-line);
   color: var(--gold);
 }
 
 .battle-board-title {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -240,6 +306,7 @@
 }
 
 .battle-board-title h2 {
+  font-size: 16px;
   text-transform: uppercase;
 }
 
@@ -254,7 +321,9 @@
   display: none;
 }
 
-/* Phones: two lines per player. */
+/* Phones: two lines per player. Each row is inner glass: the shared
+   .board li fill and --inner-line edge, with the green-tinted .me row for
+   the player (both from globals.css). */
 .board.battle-board li {
   grid-template-columns: 28px minmax(0, 1fr) auto;
   column-gap: 12px;
@@ -374,8 +443,8 @@
     gap: 20px;
   }
 
-  /* One tier per row, split into details (left) and the "How it works"
-     panel (right), so three cards never leave an orphan. */
+  /* 768-1099px: one tier per row, split into details (left) and the
+     "How it works" panel (right), so three cards never leave an orphan. */
   .card.battle-tier {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
     grid-template-rows: auto auto 1fr;
@@ -405,7 +474,20 @@
   }
 
   .battle-board-top {
-    gap: 16px;
+    gap: 12px 16px;
+  }
+
+  .battle-board-top .pill {
+    padding: 6px 13px;
+  }
+
+  .battle-tile {
+    width: 46px;
+    height: 46px;
+  }
+
+  .battle-board-title h2 {
+    font-size: 17px;
   }
 
   /* Leaderboard becomes a table: a header row and one grid row per player. */
@@ -413,7 +495,7 @@
     display: grid;
     grid-template-columns: var(--battle-cols);
     column-gap: 10px;
-    padding: 0 15.5px;
+    padding: 0 14px; /* matches the rows' side padding (glass rows have no border) */
     font-family: var(--display);
     font-size: 10px;
     font-weight: 600;
@@ -461,13 +543,15 @@
   }
 }
 
-/* =============================================================== 1360px */
+/* =============================================================== 1100px */
 
-@media (min-width: 1360px) {
+@media (min-width: 1100px) {
   /* All three tiers side by side, each card stacked vertically with the
-     join buttons lined up along the bottom. */
+     join buttons lined up along the bottom. Cards are ~240px wide at
+     1100px, so the padding is a little tighter until 1360px. */
   .battle-tiers {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
   }
 
   .card.battle-tier {
@@ -479,7 +563,32 @@
       'how'
       'join';
     gap: 16px;
+    padding: 20px 18px;
+  }
+
+  .panel.battle-how {
+    padding: 14px;
+  }
+
+  /* ~217px buttons: the date-range label needs the room. */
+  .battle-join .btn {
+    padding: 0 12px;
+  }
+}
+
+/* =============================================================== 1360px */
+
+@media (min-width: 1360px) {
+  .battle-tiers {
+    gap: 20px;
+  }
+
+  .card.battle-tier {
     padding: 22px;
+  }
+
+  .panel.battle-how {
+    padding: 16px;
   }
 
   /* Standing card (left, stays in view while scrolling) beside the

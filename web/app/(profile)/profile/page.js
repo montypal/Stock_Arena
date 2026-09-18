@@ -1,10 +1,9 @@
 import { requireUser } from '../../../lib/db/auth';
-import { pastEntries, tierInfo } from '../../../lib/trading/game';
+import { careerStats, pastEntries, tierInfo } from '../../../lib/trading/game';
 import { money, ordinal, signedMoney, tone, weekLabel } from '../../../lib/utils/format';
-import { logout } from '../../../lib/actions';
 import { PageHead } from '../../../components/layout/ui';
-import Icon from '../../../components/layout/icons';
 import CoinsCard from '../../../components/profile/CoinsCard';
+import ForgetDevice from '../../../components/auth/ForgetDevice';
 
 const ACH_DEFS = [
   {
@@ -49,9 +48,12 @@ const ACH_DEFS = [
   },
 ];
 
+// Placeholder notifications (the card is labelled as such). General facts
+// about the game only, never claims about what this player did or is close
+// to doing (contextHistory.md rule 17).
 const NOTIFS = [
-  { title: 'League ends Sunday', sub: 'Final ranks lock at the closing bell.' },
-  { title: 'Achievement near complete', sub: 'One more podium unlocks a new badge.' },
+  { title: 'League ends Sunday', sub: 'Trading closes Friday at 4:00 PM ET; results settle when Sunday ends.' },
+  { title: 'How achievements unlock', sub: 'Badges unlock from your finished league results.' },
   { title: 'Market opens 9:30 AM ET', sub: 'Queued orders fill when trading resumes.' },
 ];
 
@@ -62,7 +64,7 @@ function placeTone(rank) {
 
 export default async function ProfilePage() {
   const user = await requireUser();
-  const history = await pastEntries(user.id);
+  const [history, career] = await Promise.all([pastEntries(user.id), careerStats(user.id)]);
   const wins = history.filter((e) => e.final_rank === 1).length;
   const podiums = history.filter((e) => e.final_rank && e.final_rank <= 3).length;
   const totalCoins = history.reduce((sum, e) => sum + Number(e.coins_awarded ?? 0), 0);
@@ -79,6 +81,12 @@ export default async function ProfilePage() {
     loyal: podiums >= 3,
   };
   const unlockedCount = Object.values(unlocked).filter(Boolean).length;
+
+  // The stats row shows full career totals (same source as Progress);
+  // pastEntries() above only covers the latest 20 settled leagues.
+  const careerPlayed = Number(career.played) || 0;
+  const careerWins = Number(career.wins) || 0;
+  const careerPodiums = Number(career.podiums) || 0;
 
   return (
     <main className="acct-profile">
@@ -127,20 +135,22 @@ export default async function ProfilePage() {
               <h2>Past leagues</h2>
               {history.length ? (
                 <span className="caption">
-                  {history.length} {history.length === 1 ? 'league' : 'leagues'}
+                  {careerPlayed > history.length
+                    ? `Latest ${history.length} of ${careerPlayed}`
+                    : `${history.length} ${history.length === 1 ? 'league' : 'leagues'}`}
                 </span>
               ) : null}
             </div>
             {history.length === 0 ? (
               <p className="empty">Your results show up here after your first league ends.</p>
             ) : (
-              <ul className="rows">
+              <ul className="acct-list">
                 {history.map((e) => {
                   const profit = Number(e.final_value) - Number(e.starting_balance);
                   return (
                     <li key={e.id} className="row">
                       <span className="row-main">
-                        <strong className={`acct-place ${placeTone(e.final_rank)}`}>
+                        <strong className={`place ${placeTone(e.final_rank)}`}>
                           {e.final_rank ? ordinal(e.final_rank) : '—'} of {e.room_size}
                         </strong>
                         <span className="acct-row-note">
@@ -167,15 +177,15 @@ export default async function ProfilePage() {
             <dl className="stats">
               <div>
                 <dt>Leagues</dt>
-                <dd>{history.length}</dd>
+                <dd>{careerPlayed}</dd>
               </div>
               <div>
                 <dt>Wins</dt>
-                <dd>{wins}</dd>
+                <dd>{careerWins}</dd>
               </div>
               <div>
                 <dt>Podiums</dt>
-                <dd>{podiums}</dd>
+                <dd>{careerPodiums}</dd>
               </div>
             </dl>
           </CoinsCard>
@@ -185,7 +195,7 @@ export default async function ProfilePage() {
               <h2>Notifications</h2>
               <span className="pill">Placeholder</span>
             </div>
-            <ul className="rows">
+            <ul className="acct-list">
               {NOTIFS.map((n) => (
                 <li key={n.title} className="row">
                   <span className="row-main">
@@ -197,12 +207,12 @@ export default async function ProfilePage() {
             </ul>
           </section>
 
-          <form action={logout} className="acct-logout">
-            <button className="btn ghost block" type="submit">
-              <Icon name="logout" size={18} strokeWidth={2} />
-              Log out
-            </button>
-          </form>
+          {/* Device sign-in while there's no login page: a plain log out would
+              sign this device straight back in on the landing page, so this
+              also forgets the device id (components/auth/ForgetDevice.js). */}
+          <div className="acct-signout">
+            <ForgetDevice />
+          </div>
         </div>
       </div>
     </main>

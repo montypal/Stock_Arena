@@ -6,6 +6,7 @@ import { money, pct, shareCount, timeET } from '../../../../lib/utils/format';
 import { cancel, trade } from '../../../../lib/actions';
 import AutoRefresh from '../../../../components/layout/refresh';
 import Icon from '../../../../components/layout/icons';
+import SubmitButton from '../../../../components/layout/SubmitButton';
 import { Flash } from '../../../../components/layout/ui';
 import DollarField from '../../../../components/trade/DollarField';
 import { changeTone, dayChange } from '../../../../components/trade/change';
@@ -115,9 +116,13 @@ export default async function StockPage({ params, searchParams }) {
                       : "That's your available cash."
                   }`}
                 />
-                <button className="btn primary block" type="submit" disabled={limits.maxBuy < 1}>
+                <SubmitButton
+                  className="btn primary block"
+                  pendingLabel="Placing order…"
+                  disabled={limits.maxBuy < 1}
+                >
                   Place buy order
-                </button>
+                </SubmitButton>
               </form>
             </section>
           ) : null}
@@ -131,17 +136,17 @@ export default async function StockPage({ params, searchParams }) {
                 <input type="hidden" name="symbol" value={symbol} />
                 <input type="hidden" name="side" value="sell" />
                 <DollarField max={maxSell} hint={`Up to ${money(maxSell)}. To sell every share, use Sell all.`} />
-                <button className="btn outline block" type="submit">
+                <SubmitButton className="btn outline block" pendingLabel="Placing order…">
                   Place sell order
-                </button>
+                </SubmitButton>
               </form>
               <form action={trade}>
                 <input type="hidden" name="symbol" value={symbol} />
                 <input type="hidden" name="side" value="sell" />
                 <input type="hidden" name="all" value="1" />
-                <button className="btn ghost block" type="submit">
+                <SubmitButton className="btn ghost block" pendingLabel="Selling…">
                   Sell all {symbol}
-                </button>
+                </SubmitButton>
               </form>
             </section>
           ) : null}
@@ -164,9 +169,9 @@ export default async function StockPage({ params, searchParams }) {
                     <form action={cancel}>
                       <input type="hidden" name="order_id" value={o.id} />
                       <input type="hidden" name="back" value={back} />
-                      <button className="btn small ghost" type="submit">
+                      <SubmitButton className="btn small ghost" pendingLabel="Cancelling…">
                         Cancel
-                      </button>
+                      </SubmitButton>
                     </form>
                   </li>
                 ))}

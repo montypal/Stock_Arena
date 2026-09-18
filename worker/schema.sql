@@ -79,6 +79,11 @@ CREATE TABLE IF NOT EXISTS users (
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- TEMPORARY device identity while the login page is removed (9/17/26):
+-- sha256 of a random id each browser keeps in localStorage. Nullable, so
+-- existing password accounts are untouched.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS device_hash TEXT UNIQUE;
+
 CREATE TABLE IF NOT EXISTS sessions (
     token_hash TEXT PRIMARY KEY,  -- sha256 of the cookie value
     user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

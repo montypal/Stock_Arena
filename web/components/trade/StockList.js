@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { money, pct } from '../../lib/utils/format';
 import { changeTone, dayChange } from './change';
 
-// Every stock links to its trade page. Rows on phones, tiles from 768px
-// (layout lives in styles/screens/trade.css).
+// Every stock links to its trade page. The list sits inside one glass
+// `.card.flush` (app/(battles)/trade/page.js): divided rows on phones, a grid
+// of inner-glass tiles from 768px (styles/screens/trade.css).
 export default function StockList({ stocks }) {
   return (
     <ul className="trade-list">

@@ -6,6 +6,7 @@ import '../styles/screens/trade.css';
 import '../styles/screens/account.css';
 import AppHeader from '../components/layout/header';
 import NavBar from '../components/layout/nav';
+import PointerGlow from '../components/layout/PointerGlow';
 import { currentUser } from '../lib/db/auth';
 
 // Every page depends on who's logged in and on live prices.
@@ -35,6 +36,7 @@ export default async function RootLayout({ children }) {
         <AppHeader coins={user ? user.coins : null} />
         <div className="app">{children}</div>
         {user ? <NavBar /> : null}
+        <PointerGlow />
       </body>
     </html>
   );

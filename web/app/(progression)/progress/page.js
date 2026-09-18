@@ -20,13 +20,17 @@ export default async function ProgressPage() {
   const totalCoins = history.reduce((sum, e) => sum + Number(e.coins_awarded ?? 0), 0);
   const ranks = history.map((e) => Number(e.final_rank)).filter((r) => r > 0);
   const bestFinish = ranks.length ? ordinal(Math.min(...ranks)) : '—';
-  const capped = history.length >= HISTORY_LIMIT;
+  // Only true once the career has more finished leagues than pastEntries() returns.
+  const capped = played > history.length && history.length >= HISTORY_LIMIT;
 
   return (
     <main>
-      <PageHead eyebrow="Progress" title="Your" accent="career">
-        <p className="muted small">Coins only — league cash never mixes with coins.</p>
-      </PageHead>
+      <PageHead
+        eyebrow="Progress"
+        title="Your"
+        accent="career"
+        sub="Coins only — league cash never mixes with coins."
+      />
 
       <div className="split">
         <div className="col">
@@ -66,7 +70,11 @@ export default async function ProgressPage() {
                   <p className="caption">Best finish and coins won cover your last {HISTORY_LIMIT} leagues.</p>
                 ) : null}
                 <p className="muted small">
-                  Your league-by-league results live on your <Link href="/profile">Profile</Link>.
+                  Your league-by-league results live on your{' '}
+                  <Link href="/profile" className="acct-link">
+                    Profile
+                  </Link>
+                  .
                 </p>
               </>
             )}

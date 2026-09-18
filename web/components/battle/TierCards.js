@@ -1,9 +1,10 @@
 import Icon from '../layout/icons';
+import SubmitButton from '../layout/SubmitButton';
 import { join } from '../../lib/actions';
 import { POSITION_CAP, ROOM_CAPACITY, TIERS, WIN_COINS } from '../../lib/trading/game';
 import { money, weekLabel, weekRange } from '../../lib/utils/format';
 
-// The three weekly leagues a player can join, one solid card per tier.
+// The three weekly leagues a player can join, one glass card per tier.
 //
 // week  - the league week's Monday ('YYYY-MM-DD'), from joinableWeek()
 // live  - true once that week has started (weekHasStarted(week))
@@ -11,7 +12,8 @@ import { money, weekLabel, weekRange } from '../../lib/utils/format';
 //         cards sit under a section heading)
 //
 // Each card posts its tier to the `join` server action, which places the
-// player in a room of real players for that week.
+// player in a room of real players for that week. The submit button shows a
+// spinner and "Joining…" while that runs, and can't be pressed twice.
 export default function TierCards({ week, live, level = 2 }) {
   const Title = level === 3 ? 'h3' : 'h2';
   const cap = Math.round(POSITION_CAP * 100);
@@ -66,13 +68,12 @@ export default function TierCards({ week, live, level = 2 }) {
 
             <form action={join} className="battle-join">
               <input type="hidden" name="tier" value={t.tier} />
-              <button
-                className="btn blue block"
-                type="submit"
-                aria-label={`Join the $${t.label} for ${range}`}
-              >
+              {/* The tier name is screen-reader text inside the label (not an
+                  aria-label) so "Joining…" is what gets read while pending. */}
+              <SubmitButton className="btn blue block" pendingLabel="Joining…">
                 Join · {range}
-              </button>
+                <span className="battle-sr">{`, $${t.label}`}</span>
+              </SubmitButton>
             </form>
           </article>
         );

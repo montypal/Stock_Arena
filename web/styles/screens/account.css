@@ -1,30 +1,61 @@
 /* account screen styles. Owned by the account screen; shared pieces live in app/globals.css.
-   Screens: /login, /daily, /progress, /profile, /status.
-   Mobile-first; tablet at 768px, desktop at 1100px. Solid surfaces only. */
+   Screens: /daily, /progress, /profile, /status.
+   Mobile-first; tablet at 768px, desktop at 1100px.
+   Liquid glass: every top-level box is a .card / .hero-card / .stat-tile,
+   which globals.css already renders as frosted glass. Things nested inside
+   them are clear inner glass (--inner fill, --inner-line edge, a faint top
+   highlight). Emphasis and state use the shared rim modifiers on the glass
+   container (.rim-ok, .rim-bad, .rim-gold), never border colours. */
 
-/* ================================================================= login */
+/* ============================================================ inner glass */
+/* Lists of nested items drawn as inner-glass tiles inside a glass card:
+   past leagues and notifications (Profile), cached prices (Status). */
 
-.acct-auth {
-  width: 100%;
-  max-width: 440px;
-  margin: 0 auto;
-  padding-top: 3vh;
+.acct-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
 }
 
-.acct-auth .pagehead {
-  align-items: center;
-  text-align: center;
+.acct-list > .row {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--inner);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px var(--inner-line);
 }
 
-.acct-auth-card {
-  gap: 16px;
-  padding: 24px 20px;
-  border-radius: var(--radius-xl);
-  border-color: var(--edge-strong);
+/* Inline text link inside a card (Progress -> Profile). */
+.acct-link {
+  color: var(--green-hi);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(108, 242, 156, 0.45);
+  text-underline-offset: 3px;
+  border-radius: 4px;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease,
+    opacity 0.12s ease;
 }
 
-.acct-auth-card .btn {
-  margin-top: 4px;
+@media (hover: hover) {
+  .acct-link:hover {
+    color: var(--text);
+    text-decoration-color: currentColor;
+  }
+}
+
+.acct-link:active {
+  opacity: 0.7;
+}
+
+.acct-link:focus-visible {
+  outline: 2px solid var(--green-hi);
+  outline-offset: 2px;
 }
 
 /* ================================================================= daily */
@@ -91,7 +122,7 @@
 /* =============================================================== profile */
 
 /* Phones: the two .split columns are flattened so the coins card leads,
-   then achievements, past leagues, notifications, log out. */
+   then achievements, past leagues, notifications, and signing out last. */
 .acct-profile .acct-profile-main,
 .acct-profile .acct-profile-side {
   display: contents;
@@ -113,7 +144,7 @@
   order: 4;
 }
 
-.acct-profile .acct-logout {
+.acct-profile .acct-signout {
   order: 5;
 }
 
@@ -125,6 +156,8 @@
   gap: 10px;
 }
 
+/* Achievement tile: clear inner glass while locked; unlocked ones fill with
+   a green inner accent and a brighter edge. Not interactive, so no hover. */
 .acct-ach {
   display: flex;
   align-items: center;
@@ -132,13 +165,19 @@
   min-width: 0;
   padding: 12px 10px;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
-  border: 1.5px solid var(--edge-soft);
+  background: var(--inner);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px var(--inner-line);
   color: var(--text-faint);
 }
 
 .acct-ach svg {
   flex: none;
+}
+
+.acct-ach.is-off svg {
+  opacity: 0.75;
 }
 
 .acct-ach-text {
@@ -168,9 +207,14 @@
 }
 
 .acct-ach.is-on {
-  background: var(--up-bg);
-  border-color: var(--green);
-  color: var(--green);
+  background:
+    var(--glass-sheen),
+    linear-gradient(180deg, rgba(108, 242, 156, 0.18), rgba(46, 224, 111, 0.06));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 1px rgba(140, 245, 185, 0.5),
+    0 0 18px -6px rgba(46, 224, 111, 0.45);
+  color: var(--green-hi);
 }
 
 .acct-ach.is-on .acct-ach-label {
@@ -192,19 +236,11 @@
   color: var(--gold);
 }
 
-.acct-place.p1 {
-  color: var(--gold);
-}
-
-.acct-place.p2 {
-  color: var(--silver);
-}
-
-.acct-place.p3 {
-  color: var(--bronze);
-}
+/* Podium colours for a past-league place come from the shared .place.p1-3. */
 
 /* ================================================================ status */
+/* The card's rim carries the state (.rim-ok / .rim-bad / .rim-gold, set in
+   the page); the dot repeats it next to the label. */
 
 .acct-status {
   gap: 12px;
@@ -224,22 +260,17 @@
   margin-top: 6px;
   border-radius: 50%;
   background: var(--gold);
-}
-
-.acct-status.is-ok {
-  border-color: var(--edge-strong);
+  box-shadow: 0 0 10px rgba(247, 203, 77, 0.6);
 }
 
 .acct-status.is-ok .acct-status-dot {
   background: var(--up);
-}
-
-.acct-status.is-bad {
-  border-color: var(--down);
+  box-shadow: 0 0 10px rgba(69, 234, 143, 0.7);
 }
 
 .acct-status.is-bad .acct-status-dot {
   background: var(--down);
+  box-shadow: 0 0 10px rgba(255, 122, 107, 0.7);
 }
 
 .acct-status-text {
@@ -259,29 +290,9 @@
   overflow-wrap: anywhere;
 }
 
-.acct-prices {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.acct-foot code {
-  font-family: var(--display);
-  font-size: 11.5px;
-  color: var(--green-hi);
-}
-
 /* ================================================================ tablet */
 
 @media (min-width: 768px) {
-  .acct-auth {
-    padding-top: 7vh;
-  }
-
-  .acct-auth-card {
-    gap: 18px;
-    padding: 30px 28px;
-  }
-
   .acct-article {
     padding: 22px;
   }
@@ -318,8 +329,16 @@
 
   .acct-profile .acct-ach-card,
   .acct-profile .acct-history-card,
-  .acct-profile .acct-logout {
+  .acct-profile .acct-signout {
     grid-column: 1 / -1;
+  }
+
+  /* Sign out closes the page, centred at a button's width rather than a
+     full-width bar across both columns. */
+  .acct-profile .acct-signout {
+    justify-self: center;
+    width: 100%;
+    max-width: 440px;
   }
 
   .acct-ach-grid {
@@ -343,21 +362,13 @@
   /* Status: prices in two columns. */
   .acct-prices {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 32px;
-  }
-
-  .acct-prices > li:nth-child(2) {
-    border-top: 0;
+    gap: 10px;
   }
 }
 
 /* =============================================================== desktop */
 
 @media (min-width: 1100px) {
-  .acct-auth {
-    padding-top: 9vh;
-  }
-
   .acct-article-title {
     font-size: 18px;
   }
@@ -367,7 +378,7 @@
   }
 
   /* Profile: achievements + past leagues in the main column, coins +
-     notifications + log out in the side column. */
+     notifications + sign out in the side column. */
   .acct-profile .split {
     grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
     align-items: start;
@@ -380,16 +391,16 @@
 
   .acct-profile .acct-ach-card,
   .acct-profile .acct-history-card,
-  .acct-profile .acct-logout {
+  .acct-profile .acct-signout {
     grid-column: auto;
+  }
+
+  .acct-profile .acct-signout {
+    max-width: none;
   }
 
   /* Status: prices in three columns. */
   .acct-prices {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .acct-prices > li:nth-child(3) {
-    border-top: 0;
   }
 }

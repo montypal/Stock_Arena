@@ -62,8 +62,8 @@ function BoardRow({ row, place, me, gap = false }) {
   return (
     <li className={classes || undefined}>
       <span className={place <= 3 ? `place p${place}` : 'place'}>{place}</span>
-      <span className="who">
-        {row.display_name}
+      <span className="who home-who">
+        <span className="home-who-name">{row.display_name}</span>
         {me ? <span className="you">you</span> : null}
       </span>
       <span className={`num ${tone(profit)}`}>{signedMoney(profit)}</span>

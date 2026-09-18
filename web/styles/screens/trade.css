@@ -1,9 +1,13 @@
 /* ==========================================================================
    Trade screen: /trade (search + stock list) and /trade/[symbol] (quote,
    position, buy/sell forms, pending orders). Owned by the trade screen;
-   shared pieces (cards, pills, fields, buttons) live in app/globals.css.
-   Mobile first, then 768px (tablet) and 1100px (desktop with nav rail).
-   Solid colours only; nothing here is decorative.
+   shared pieces (glass, cards, pills, fields, buttons) live in
+   app/globals.css. Mobile first, then 768px (tablet) and 1100px (desktop
+   with nav rail).
+   Liquid glass: top-level boxes are glass through shared classes (.card,
+   .hero-card, .flash, .glass); everything nested inside them is clear inner
+   glass (--inner / --inner-2 / --inner-line). Glass has no border, so state
+   and focus are drawn with box-shadow rings. Nothing here is decorative.
    ========================================================================== */
 
 /* ------------------------------------------------------ /trade: heading */
@@ -22,15 +26,29 @@
   min-width: 0;
 }
 
+/* Search: the label is the glass capsule (class `glass` in SearchForm.js);
+   the input inside it is borderless and clear. */
 .trade-search-field {
   position: relative;
   display: block;
+  border-radius: 999px;
+  cursor: text;
+  transition: box-shadow 0.25s ease;
+}
+
+.trade-search-field:focus-within {
+  box-shadow:
+    var(--glass-inset),
+    0 0 0 1px rgba(140, 245, 185, 0.7),
+    0 0 0 5px rgba(46, 224, 111, 0.2),
+    var(--glass-shadow);
 }
 
 .trade-search-icon {
   position: absolute;
   top: 50%;
   left: 18px;
+  z-index: 1;
   translate: 0 -50%;
   color: var(--green-hi);
   pointer-events: none;
@@ -41,13 +59,14 @@
   appearance: none;
   display: block;
   padding-left: 50px;
-  border-radius: 999px;
-  background: var(--surface);
-  border-color: var(--edge);
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
 }
 
 .trade-search-field input:focus {
-  border-color: var(--green);
+  background: rgba(0, 0, 0, 0.14);
+  box-shadow: none;
 }
 
 .trade-count {
@@ -65,19 +84,21 @@
 }
 
 /* --------------------------------------------------- /trade: stock list */
-/* Phones: divided rows inside one flush card. */
+/* Phones: divided inner-glass rows inside one glass .card.flush. Each row
+   highlights on hover, presses in with a spring, and shows a focus ring. */
 
 .trade-list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 6px;
 }
 
 .trade-list > li + li {
-  border-top: 1.5px solid var(--edge-soft);
+  border-top: 1px solid var(--inner-line);
 }
 
 .trade-stock {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -85,17 +106,35 @@
     'name chg';
   align-items: center;
   gap: 4px 14px;
-  padding: 14px 20px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
   color: inherit;
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+    transform 0.5s var(--spring),
+    background-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
-.trade-stock:hover,
+@media (hover: hover) {
+  .trade-stock:hover {
+    background-color: var(--inner-2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+}
+
 .trade-stock:active {
-  background: var(--surface-3);
+  background-color: var(--inner-2);
+  transform: scale(0.97);
+  transition-duration: 0.12s;
+}
+
+.trade-stock:focus-visible {
+  z-index: 1;
+  outline: none;
+  background-color: var(--inner-2);
+  box-shadow: inset 0 0 0 2px rgba(108, 242, 156, 0.85);
 }
 
 .trade-stock-sym {
@@ -132,7 +171,7 @@
   justify-self: end;
 }
 
-/* Day-change pill: tinted fill, edge in the text colour. */
+/* Day-change pill: tinted inner glass with a ring in the text colour. */
 .trade-chg {
   padding: 4px 10px;
   font-size: 11.5px;
@@ -142,14 +181,18 @@
 
 .trade-chg.up {
   color: var(--up);
-  background: var(--up-bg);
-  border-color: var(--up);
+  background: linear-gradient(180deg, rgba(69, 234, 143, 0.22), rgba(69, 234, 143, 0.06)), var(--up-bg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(69, 234, 143, 0.45);
 }
 
 .trade-chg.down {
   color: var(--down);
-  background: var(--down-bg);
-  border-color: var(--down);
+  background: linear-gradient(180deg, rgba(255, 122, 107, 0.22), rgba(255, 122, 107, 0.06)), var(--down-bg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 0 1px rgba(255, 122, 107, 0.45);
 }
 
 .trade-chg.flat {
@@ -197,9 +240,17 @@
   margin-top: 4px;
 }
 
-/* The card gap already spaces the stats from the heading. */
+/* Position stats: an inner-glass panel inside the glass card (the card gap
+   already spaces it from the heading). */
 .trade-position .stats {
   margin-top: 0;
+  padding: 14px 16px;
+  border-top: 0;
+  border-radius: var(--radius-md);
+  background: var(--inner);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px var(--inner-line);
 }
 
 /* ------------------------------------------ /trade/[symbol]: order forms */
@@ -220,6 +271,7 @@
   position: absolute;
   top: 50%;
   left: 18px;
+  z-index: 1;
   translate: 0 -50%;
   font-family: var(--display);
   font-size: 20px;
@@ -228,6 +280,8 @@
   pointer-events: none;
 }
 
+/* Borderless inner well; focus ring comes from the shared input:focus
+   box-shadow in globals.css. */
 .trade-money input {
   -moz-appearance: textfield;
   appearance: textfield;
@@ -250,6 +304,30 @@
   line-height: 1.5;
 }
 
+/* Pending orders: each order is an inner-glass row inside the glass card. */
+.trade-pending .rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trade-pending .rows > li + li {
+  border-top: 0;
+}
+
+.trade-pending .row {
+  padding: 10px 10px 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--inner);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px var(--inner-line);
+}
+
+.trade-pending .row form {
+  flex: none;
+}
+
 /* ================================================================ tablet */
 
 @media (min-width: 768px) {
@@ -261,7 +339,8 @@
     gap: 20px 28px;
   }
 
-  /* Stock list becomes a 2-column grid of solid tiles inside the card. */
+  /* Stock list becomes a 2-column grid of inner-glass tiles inside the
+     glass card. */
   .card.trade-board {
     padding: 16px;
   }
@@ -270,6 +349,7 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    padding: 0;
   }
 
   .trade-list > li {
@@ -292,14 +372,21 @@
     gap: 6px 12px;
     padding: 16px 18px 18px;
     border-radius: var(--radius-md);
-    background: var(--surface-2);
-    border: 1.5px solid var(--edge-soft);
+    background-color: var(--inner);
+    background-image: linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.015) 45%,
+      rgba(140, 255, 190, 0.03) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.16),
+      inset 0 0 0 1px var(--inner-line);
   }
 
-  .trade-stock:hover,
   .trade-stock:active {
-    background: var(--surface-3);
-    border-color: var(--edge-strong);
+    background-color: var(--inner-2);
+    transform: translateY(0) scale(0.97);
   }
 
   .trade-stock-sym {
@@ -345,6 +432,35 @@
   }
 }
 
+/* Tiles lift toward the pointer and brighten their rim. */
+@media (min-width: 768px) and (hover: hover) {
+  .trade-stock:hover {
+    z-index: 1;
+    transform: translateY(-3px);
+    background-color: var(--inner-2);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 0 0 1px rgba(140, 245, 185, 0.32),
+      0 16px 30px -14px rgba(0, 0, 0, 0.7);
+  }
+
+  .trade-stock:active {
+    transform: translateY(0) scale(0.97);
+  }
+}
+
+/* Tile focus ring (after the hover rules so a focused tile keeps its ring
+   while the pointer is over it). */
+@media (min-width: 768px) {
+  .trade-stock:focus-visible {
+    background-color: var(--inner-2);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 0 0 2px rgba(3, 20, 10, 0.9),
+      0 0 0 5px rgba(108, 242, 156, 0.75);
+  }
+}
+
 /* =============================================================== desktop */
 
 @media (min-width: 1100px) {
@@ -369,5 +485,19 @@
 
   .trade-quote .big-number {
     font-size: 52px;
+  }
+}
+
+/* ======================================================== reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .trade-stock,
+  .trade-search-field {
+    transition: none;
+  }
+
+  .trade-stock:hover,
+  .trade-stock:active {
+    transform: none;
   }
 }

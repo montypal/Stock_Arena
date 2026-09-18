@@ -5,6 +5,8 @@ import { money, pct, signedMoney, tone } from '../../lib/utils/format';
 //
 // board - rows from leaderboard(entry.room_id), already ordered by value
 // entry - the player's entry from currentEntry()
+// canStillFill - whether other players can still join this room (its week
+//                is the one open for joining right now)
 //
 // Only the rows leaderboard() returns are shown: real players who joined
 // this room. A room with one player is shown as it is, never padded out.
@@ -12,9 +14,17 @@ import { money, pct, signedMoney, tone } from '../../lib/utils/format';
 // Phones get two-line rows:  rank · name · value
 //                                   P/L (return)      stocks · coins
 // From 768px the stat groups flatten into grid columns under a header row.
-export default function LeagueBoard({ board, entry }) {
+export default function LeagueBoard({ board, entry, canStillFill = false }) {
   const settled = entry.league_status === 'settled';
   const count = board.length;
+
+  // Same wording as the room card on Home (components/home/RoomSnapshot.js).
+  let alone = null;
+  if (count < 2) {
+    if (settled) alone = 'You were the only player in this room.';
+    else if (canStillFill) alone = "You're the first one here. Your room fills up as more players join this league.";
+    else alone = 'Nobody else joined this room this week.';
+  }
 
   return (
     <section
@@ -67,7 +77,9 @@ export default function LeagueBoard({ board, entry }) {
                     {rank}
                   </span>
                   <span className="who battle-who">
-                    <span className="battle-name">{r.display_name}</span>
+                    <span className="battle-name" title={r.display_name}>
+                      {r.display_name}
+                    </span>
                     {me ? <span className="you">You</span> : null}
                   </span>
                   <span className="battle-value num">
@@ -117,13 +129,7 @@ export default function LeagueBoard({ board, entry }) {
         </div>
       ) : null}
 
-      {count <= 1 ? (
-        <p className="empty battle-board-note">
-          {settled
-            ? 'You were the only player in this room.'
-            : "You're the first one here — the room fills up as more players join this league."}
-        </p>
-      ) : null}
+      {alone ? <p className="empty battle-board-note">{alone}</p> : null}
     </section>
   );
 }

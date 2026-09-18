@@ -24,7 +24,7 @@ export default function FindBattleCard({ week, entry }) {
   }
 
   return (
-    <section className="card home-cta" aria-labelledby="home-cta-title">
+    <section className="card rim-accent home-cta" aria-labelledby="home-cta-title">
       <div className="card-head">
         <h2 id="home-cta-title">{title}</h2>
         <span className="pill blue">Week of {weekLabel(week)}</span>

@@ -59,7 +59,7 @@ export default async function LeaguePage({ searchParams }) {
           <StandingCard entry={entry} summary={summary} place={place} total={board.length} />
 
           {settled ? (
-            <p className="battle-final" role="status">
+            <p className="glass rim-gold battle-final" role="status">
               <Icon name="trophy" size={22} strokeWidth={2} />
               <span>
                 {finalRank
@@ -77,7 +77,7 @@ export default async function LeaguePage({ searchParams }) {
           ) : null}
         </div>
 
-        <LeagueBoard board={board} entry={entry} />
+        <LeagueBoard board={board} entry={entry} canStillFill={!canJoinNext} />
       </div>
 
       {canJoinNext ? (

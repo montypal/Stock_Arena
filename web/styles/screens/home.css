@@ -1,5 +1,13 @@
 /* home screen styles. Owned by the home screen; shared pieces live in app/globals.css.
-   Mobile-first: phone base rules, then 768px (tablet) and 1100px (desktop, nav rail). */
+   Mobile-first: phone base rules, then 768px (tablet) and 1100px (desktop, nav rail).
+
+   Liquid glass (9/17/26): every top-level box on this screen is a shared glass
+   container (.card, .hero-card, .stat-tile, .flash, or .glass); tiles nested
+   inside them use the clear inner-glass tokens (--inner, --inner-2,
+   --inner-line). Glass has no border, so emphasis is a rim modifier in the
+   JSX (e.g. <section className="card rim-accent home-cta">), not border-color.
+   Text that sits straight on the moving background gets a bright colour and
+   a dark halo so it reads over any part of the gradient. */
 
 /* ================================================================ landing */
 /* Signed out. The shell keeps signed-out pages at 640px (phone) / 900px. */
@@ -17,14 +25,30 @@
   text-align: center;
 }
 
+/* Market status: a small glass capsule of its own, since it sits on the
+   background rather than inside a card. The rim (from .glass, tinted by
+   rim-accent when open) replaces the pill's flat ring. */
+.pill.home-status {
+  background: var(--glass-sheen), var(--glass-tint-strong);
+  box-shadow:
+    var(--glass-inset),
+    0 6px 18px -6px rgba(0, 0, 0, 0.55);
+}
+
+/* On the gradient: bright text with a tight dark edge plus a soft wide halo,
+   so both the green and the white lines hold up over the lightest green of
+   the mesh as it drifts behind them. */
 .home-title {
   font-size: clamp(30px, 10vw, 68px);
   font-weight: 900;
   line-height: 1.04;
   letter-spacing: 0.01em;
   text-transform: uppercase;
-  color: var(--green);
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
+  color: var(--green-hi);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 2px 10px rgba(0, 0, 0, 0.45),
+    0 6px 34px rgba(0, 0, 0, 0.6);
 }
 
 .home-title span {
@@ -39,8 +63,10 @@
   max-width: 38ch;
   font-size: 17px;
   line-height: 1.55;
-  color: var(--text-soft);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+  color: var(--text);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.7),
+    0 1px 14px rgba(0, 0, 0, 0.75);
 }
 
 .home-drop {
@@ -48,11 +74,35 @@
   max-width: 340px;
 }
 
+.home-note {
+  margin-top: -8px;
+  font-size: 14px;
+  color: var(--text);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.75),
+    0 1px 12px rgba(0, 0, 0, 0.8);
+}
+
+/* Device sign-in (components/auth/DeviceEntry.js, id="join"), which "Drop in"
+   jumps to. Kept to a form's width under the full-width hero. */
+.home-join {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
 .home-how {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
+}
+
+/* The "How it works" label sits on the background, not in a card. */
+.home-how > .eyebrow {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    0 1px 12px rgba(0, 0, 0, 0.75);
 }
 
 .home-steps {
@@ -76,6 +126,7 @@
   margin-bottom: 4px;
 }
 
+/* Labelling icon on clear inner glass inside the step card. */
 .home-step-icon {
   width: 44px;
   height: 44px;
@@ -83,9 +134,11 @@
   display: grid;
   place-items: center;
   border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  border: 1.5px solid var(--edge-soft);
-  color: var(--green);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)), var(--inner);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 1px var(--inner-line);
+  color: var(--green-hi);
 }
 
 .home-step h3 {
@@ -95,11 +148,25 @@
   text-transform: uppercase;
 }
 
+/* Over the gradient at the foot of the page. */
+.fineprint.home-fineprint {
+  color: var(--text);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    0 1px 12px rgba(0, 0, 0, 0.8);
+}
+
 /* ============================================================== dashboard */
 
-/* "Find a battle" is the one call to action on the screen. */
+/* "Find a battle" is the one call to action on the screen: the green rim
+   comes from rim-accent in the JSX; a faint green wash in the glass backs it
+   up. --glass-tint stays the base layer, so the no-blur and
+   reduced-transparency fallbacks still make it near-opaque. */
 .card.home-cta {
-  border-color: var(--edge-strong);
+  background:
+    var(--glass-sheen),
+    linear-gradient(0deg, rgba(46, 224, 111, 0.07), rgba(46, 224, 111, 0.07)),
+    var(--glass-tint);
 }
 
 /* Full-bleed rows inside a padded card, so a tapped row highlights edge to edge. */
@@ -109,6 +176,35 @@
 
 .home-list .row {
   padding-inline: 20px;
+}
+
+/* Stock rows link to their trade screen: inner-glass highlight on hover, a
+   spring press, and a ring drawn inside the row for keyboard focus (an outline
+   would spill past the card's edge). */
+.home-list a.row {
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.45s var(--spring);
+}
+
+@media (hover: hover) {
+  .home-list a.row:hover {
+    background: var(--inner-2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+}
+
+.home-list a.row:active {
+  background: var(--inner-2);
+  transform: scale(0.97);
+  transition-duration: 0.12s;
+}
+
+.home-list a.row:focus-visible {
+  outline: none;
+  background: var(--inner-2);
+  box-shadow: inset 0 0 0 2px rgba(108, 242, 156, 0.8);
 }
 
 /* Keep "100%" and "Win rate" inside a third of a phone screen. */
@@ -125,6 +221,23 @@
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+}
+
+/* A long name truncates on its own, so the "you" tag is never cut off. */
+.board .who.home-who {
+  display: flex;
+  align-items: baseline;
+}
+
+.home-who-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-who .you {
+  flex: none;
 }
 
 /* The player's own row when they're outside the top five. */
@@ -151,6 +264,10 @@
   .home-drop {
     width: auto;
     min-width: 280px;
+  }
+
+  .home-note {
+    margin-top: -10px;
   }
 
   .home-how {
@@ -209,5 +326,17 @@
 
   .home-stats .stat-value {
     font-size: clamp(20px, 1.9vw, 30px);
+  }
+}
+
+/* ======================================================== reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .home-list a.row {
+    transition: none;
+  }
+
+  .home-list a.row:active {
+    transform: none;
   }
 }
