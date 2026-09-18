@@ -6,23 +6,24 @@
 
 **A weekly stock-picking competition. Real market prices, fake money, no real trades.**
 
-StockArena is a game where players compete against each other by investing fake money into real stocks. Each league lasts one full week, from Monday through Sunday. Players receive a set amount of virtual money when they join a league, use it to buy stocks and build a portfolio, and watch its value move with the real market throughout the week.
+StockArena is a game where players compete against each other by investing fake money into real stocks. Every week three leagues open — **1K ($1,000)**, **10K ($10,000)**, and **100K ($100,000)** — and you can join one, two, or all three at once. Each league lasts one full week, Monday through Sunday. When you click **Join** on any league you enter its interface where you can see how much money you have, how much you've spent, and what stocks you've bought. You buy stocks at their real market price and during the week the value rises and falls with the real market — a simulation, but with real data. The same logic applies to 10K and 100K; only the starting money changes.
 
-Players also earn achievements during the week, which pay out additional virtual money directly into their portfolio — a second way to grow their balance beyond the market itself. At the end of Sunday, the player whose portfolio has made the most money wins the league.
+Players also earn achievements during the week, which pay out additional virtual money directly into their portfolio — a second way to grow their balance beyond the market itself. At the end of Sunday, the player whose portfolio has made the most money wins that league. Your finishing place in each league you joined pays **coins**, the game currency — and **currency and the money used to buy stocks are NOT the same**: coins are for the game (progression, chests, etc.), money is only for buying stocks inside a league.
 
 ## How a league week works
 
-- **Monday — League Begins.** Players receive their starting balance (Bronze $10,000 · Silver $25,000 · Gold $50,000 · higher leagues more) and buy stocks. The first achievements become available immediately.
+- **Monday — Leagues Open.** Three leagues open every week: **1K** (you are given **$1,000**), **10K** ($10,000), and **100K** ($100,000). Join one or all three — each is a separate competition with its own portfolio. When you click **Join** you enter that league's interface where you see how much money you have, how much you've spent, and what stocks you've bought. You buy stocks at the real stock market price and during the week their value increases and decreases with the real market — a simulation with real data. Same logic for 10K and 100K, just more starting money. The first achievements become available immediately.
 - **Tuesday–Thursday — Watch Your Portfolio.** Players track portfolio value, profit and loss, per-stock performance, league position, and the gap to the players above and below. Achievements unlock and pay cash into the available balance.
 - **Friday — Final Trade Opportunity.** One last chance to sell and rebuy — then the portfolio is locked.
 - **Saturday–Sunday — Final Stretch.** No trading, but achievements can still be earned.
-- **Sunday — League Ends.** Final portfolio value, including all achievement money, decides the winner.
+- **Sunday — League Ends.** Final portfolio value, including all achievement money, decides the winner for each league you joined.
 
 ## Leagues and achievements
 
 - **Real people, not bots — not a solo simulation.** Every league is live against other real players who joined that week. **Random leagues** match you against automatically selected real opponents; **private leagues** let friends set their own name, players, starting balance, schedule, and achievement settings. When you join a league you are placed in a room with real people and compete on the same live leaderboard.
 - **Weekly achievements** (First Buy, Diversified, Comeback, Clean Sweep, Conviction, …) pay virtual money into the current league, so a player behind on the market can still climb.
 - **Career achievements** (First Win, Three-Peat, Perfect Week, …) pay coins to your profile. Coins unlock higher leagues, extra private leagues, and customization — and are never spendable inside a league, so veterans never start a week richer than new players.
+- **Two currencies, never mixed — `CURRENCY != LEAGUE MONEY`.** **Coins** are the persistent game currency earned by finishing place in each league (higher place = more coins). **League money** ($1,000 / $10,000 / $100,000) is only the cash you use to buy stocks inside that league, shown in the league interface as money / spent / holdings. Coins are for progression/chests and cannot buy stocks; league money cannot be earned as a reward and resets each week.
 
 ## Shape of the system
 

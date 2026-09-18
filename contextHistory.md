@@ -252,7 +252,7 @@ At the end of Sunday, the player whose portfolio has made the most money wins th
 
 ## Weekly Game Loop
 
-**Monday — League Begins.** Players receive their starting balance, which varies by league (Bronze $10,000 · Silver $25,000 · Gold $50,000 · higher leagues more). They buy stocks, which then move with the real market. The first achievements become available immediately.
+**Monday — Leagues Open.** Three leagues open every week — **1K ($1,000)**, **10K ($10,000)**, **100K ($100,000)** — and a player may join one, two, or all three; each is a separate competition with its own portfolio. In the 1K league you are given $1,000 (same logic for 10K/100K with more money). When you click **Join** you enter that league's interface where you can see how much money you have, how much you've spent, and what stocks you've bought. You buy stocks at the real stock market price and during the week the stocks' value increases and decreases with the real market — a simulation but with real data. The first achievements become available immediately.
 
 **Tuesday–Thursday — Watch Your Portfolio.** Players monitor portfolio value, profit and loss, individual stock performance, league position, and distance from the players above and below. Achievements unlock through these days based on performance, paying cash into the available balance.
 
@@ -260,7 +260,7 @@ At the end of Sunday, the player whose portfolio has made the most money wins th
 
 **Saturday–Sunday — Final Stretch.** No trading. Achievements can still be earned, since they depend on performance and position rather than trading.
 
-**Sunday — League Ends.** Final portfolio value is calculated including all achievement money. Most profit wins.
+**Sunday — League Ends.** Final portfolio value is calculated including all achievement money. Most profit wins in each league you joined; your finishing place in each league pays **coins** (game currency) — and **currency and the money used to buy stocks are NOT the same**: coins are for the game, money is only for that league's stock buying and resets each week.
 
 ## League Structure
 
@@ -354,7 +354,9 @@ Every week, a new competitive cycle begins. Users choose one of three **league t
 * **10K League** — start the week with $10,000 in play money
 * **100K League** — start the week with $100,000 in play money
 
-These tiers exist so players can pick a scale that feels meaningful to them — a $1,000 portfolio moves differently (in percentage terms, psychologically, and strategically) than a $100,000 one, so different tiers likely attract different playstyles (more aggressive/high-risk in lower tiers, perhaps more measured strategy in higher tiers).
+These tiers exist so players can pick a scale that feels meaningful to them — a $1,000 portfolio moves differently (in percentage terms, psychologically, and strategically) than a $100,000 one, so different tiers likely attract different playstyles (more aggressive/high-risk in lower tiers, perhaps more measured strategy in higher tiers). A player may join one, two, or all three tiers in the same week; each league is a separate competition with its own portfolio and leaderboard.
+
+When you click **Join** on any tier you enter that league's interface where you can see how much money you have, how much you've spent, and what stocks you've bought. You buy stocks at the real market price and during the week the value rises and falls with the real price — a simulation, but with real data. The same applies to 10K ($10,000) and 100K ($100,000); only the starting money changes.
 
 Once a user enters a league for the week, their fake balance is locked in at that starting amount, and the trading period begins.
 
@@ -381,9 +383,9 @@ StockArena has two completely separate types of currency/value:
 * Coins are separate from the fake money used inside a league.
 * Coins can be used for progression systems such as chests, cosmetics, buddies, and other future profile/unlock systems.
 
-**Important rule: Never mix league cash and coins.**
+**Important rule: Never mix league cash and coins. CURRENCY AND THE MONEY TO BUY STOCKS ARE NOT THE SAME — coins are for the game while money is for the leagues.**
 
-A reward that gives the player coins must never be implemented as giving them additional league cash.
+A reward that gives the player coins must never be implemented as giving them additional league cash. Different places in each league pay **coins** (game currency) based on finishing place; league money ($1,000 / $10,000 / $100,000) is only the cash you use to buy stocks inside that league.
 
 League cash exists for stock trading inside a league. Coins exist as the persistent in-game currency.
 
@@ -683,5 +685,15 @@ README update at Jackson's request after pulling latest (`06cd97a`). No collabor
 Jackson OpenCode evening 9/17/26 PDT
 
 Pushed the README update (`0ea0367` — `README: document liquid-glass green/black UI + real opponents not simulation`) to `origin/main` at Jackson's request. `git push origin main` from `06cd97a..0ea0367` succeeded; `git status` clean except `web/package-lock.json` untracked (left untracked). No additional code changes; previous `contextHistory.md` entry preserved verbatim per append-only rule.
+
+---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Aligned game mechanics in `README.md` and `contextHistory.md` to Jackson's spec at his request. `git status` clean before edits; no remote changes to pull.
+
+* `README.md`: intro now states every week three leagues open — 1K ($1,000), 10K ($10,000), 100K ($100,000) — and you may join one, two, or all three at once; clicking Join enters that league's interface showing how much money you have / spent / stocks bought; buying at real market price with real-time rises/falls (simulation with real data, same for all tiers). `## How a league week works` Monday bullet rewritten for 1K/10K/100K.Sunday pays coins per league. `## Leagues and achievements` now ends with explicit **CURRENCY != LEAGUE MONEY** bullet (coins = game currency from finishing place, league money = only for buying stocks, resets weekly).
+* `contextHistory.md` (current plan, not history): `## Weekly Game Loop` Monday rewritten for 1K/10K/100K + multi-join + interface description; Sunday note adds coins per league and CURRENCY != MONEY; `## Core Concept: The Weekly League` tier paragraphs now note you may join 1/all three + interface description; `### The Two Currencies` important rule now includes **CURRENCY AND THE MONEY TO BUY STOCKS ARE NOT THE SAME — coins are for the game while money is for the leagues** and clarifies places pay coins vs league money for stocks. No code, secrets, or DB changes; no history rewritten.
+* Follow-up: push committed as one doc commit; collaborators should treat 1K/10K/100K multi-join + real-price simulation + coins≠league-money as source of truth going forward.
 
 ---
