@@ -679,3 +679,9 @@ README update at Jackson's request after pulling latest (`06cd97a`). No collabor
 * Follow-up: commit + push when Jackson approves; collaborators should keep real-players-only (Rule 17) and liquid-glass green/black language for all new screens.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Pushed the README update (`0ea0367` — `README: document liquid-glass green/black UI + real opponents not simulation`) to `origin/main` at Jackson's request. `git push origin main` from `06cd97a..0ea0367` succeeded; `git status` clean except `web/package-lock.json` untracked (left untracked). No additional code changes; previous `contextHistory.md` entry preserved verbatim per append-only rule.
+
+---
