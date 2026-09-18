@@ -170,12 +170,12 @@ export async function trade(formData) {
   const symbol = String(formData.get('symbol') ?? '').toUpperCase().replace(/[^A-Z.]/g, '');
   const side = String(formData.get('side') ?? '');
   const sellAll = formData.get('all') === '1';
-  const amount = Math.round(Number(formData.get('amount')) * 100) / 100;
+  const shares = Number(formData.get('shares'));
   const back = `/trade/${symbol}`;
 
   let error = null;
   try {
-    await placeOrder(user.id, { symbol, side, amount, sellAll });
+    await placeOrder(user.id, { symbol, side, shares, amount: undefined, sellAll });
   } catch (err) {
     error = playerMessage(err);
   }

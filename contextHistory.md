@@ -720,3 +720,16 @@ Implemented the snappy-tabs plan + fixed league prize copy at Jackson's request 
 * Follow-up: feel the difference on a phone over LTE; Vercel build is the production check.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Rebuilt the buying flow at Jackson's request: real data everywhere, sortable trade list, company descriptions, buy/sell by share count with a -/+ stepper (replaces dollar-amount inputs, all 30 stocks). Pulled first (already up to date); no destructive ops; no secrets.
+
+* **Real data:** prices were already live Finnhub `/quote` via the worker (web never calls the vendor). Descriptions are new: worker fetches Finnhub `/stock/profile2` and caches per symbol in new nullable `stocks.description`/`industry` columns (`schema.sql`, ADD COLUMN only); `poller.py` backfills missing-only each cycle (steady state = zero extra calls, inside 60/min). Detail page renders the cached description, neutral fallback if missing — nothing invented.
+* **Trade list:** default sort is now trending (biggest day-change % first); new Sort control (Trending / A–Z / Z–A / Price ↑ / Price ↓) via `?sort=`, server-side whitelist in `stocks()`; `?q=` search kept. New client `SortSelect.js` (server components can't carry onChange).
+* **Share stepper:** new client `ShareStepper.js` (`- N +`, default 0, whole shares, max = affordable/cap room or held) bound to a `shares` form field; `DollarField.js` deleted. `placeOrder` validates integer shares ≥1, cost ≤ cash and 20% cap; stores shares + estimated cost. Worker `_fill_one` fills N shares at the next observed price (actual cost deducted, rejects if cash short at fill; old dollar orders still fill). Sell stepper mirrors buy + Sell-all kept.
+* **Review fixes (agent gaps):** description/industry were never selected by `stock()` (page would have shown nothing) — fixed; `symbol-desc` sort fell through to trending — fixed; stepper/select interactivity can't live in server components — extracted to client components; whole-shares guard added; buy-button disable now share-based; removed a noop line in worker fill.
+* **Verified:** `npm run build` green (all routes incl. `/trade`, `/trade/[symbol]`); worker `py_compile` clean + 6/6 unit tests pass; forward pricing, 20% cap, settlement, payouts, nav, glass untouched.
+* Follow-up: descriptions populate when the worker runs its next cycle (Railway); confirm Vercel build + spot-check a fill.
+
+---

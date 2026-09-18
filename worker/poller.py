@@ -32,6 +32,7 @@ import game
 
 EASTERN = ZoneInfo("America/New_York")
 QUOTE_URL = "https://finnhub.io/api/v1/quote"
+PROFILE_URL = "https://finnhub.io/api/v1/stock/profile2"
 CLOSED_SLEEP_SECONDS = 300
 RECONNECT_SECONDS = 10
 
@@ -121,6 +122,55 @@ def poll(conn, symbols):
     return quotes
 
 
+def fetch_profile(symbol):
+    """Return the company description for one symbol, or None on failure.
+
+    Profiles barely change, so callers only fetch symbols whose description
+    is still missing from the stocks table.
+    """
+    try:
+        r = requests.get(
+            PROFILE_URL,
+            params={"symbol": symbol, "token": API_KEY},
+            timeout=10,
+        )
+        if r.status_code == 429:
+            log(f"  {symbol}: profile rate limited")
+            return None
+        r.raise_for_status()
+        description = (r.json().get("description") or "").strip()
+        if not description:
+            log(f"  {symbol}: no description in response")
+            return None
+        return description
+    except requests.RequestException as e:
+        log(f"  {symbol}: profile request failed -- {e}")
+        return None
+
+
+def backfill_profiles(conn):
+    """Fetch company descriptions for symbols missing one, then store them.
+
+    Missing-only, so steady state costs zero extra vendor calls.
+    """
+    missing = game.symbols_missing_profiles(conn)
+    if not missing:
+        return
+    profiles = {}
+    for symbol in missing:
+        description = fetch_profile(symbol)
+        if description is not None:
+            profiles[symbol] = description
+    if profiles:
+        with conn.transaction():
+            with conn.cursor() as cur:
+                cur.executemany(
+                    "UPDATE stocks SET description = %s WHERE symbol = %s",
+                    [(d, s) for s, d in profiles.items()],
+                )
+        log(f"backfilled descriptions for {len(profiles)}/{len(missing)} stocks")
+
+
 def write_prices(conn, quotes):
     with conn.transaction():
         with conn.cursor() as cur:
@@ -163,6 +213,7 @@ def open_cycle(conn):
         game.fill_pending_orders(conn, quotes, log)
     else:
         log("no quotes this cycle")
+    backfill_profiles(conn)
     game.settle_due_leagues(conn, log)
 
 
@@ -174,6 +225,7 @@ def closed_cycle(conn):
     real brokerage handles it.
     """
     game.settle_due_leagues(conn, log)
+    backfill_profiles(conn)
     missing = game.symbols_missing_prices(conn)
     if missing:
         quotes = poll(conn, missing)

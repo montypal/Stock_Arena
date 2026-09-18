@@ -6,12 +6,14 @@ import { first } from '../../../lib/utils/format';
 import AutoRefresh from '../../../components/layout/refresh';
 import { Flash, PageHead } from '../../../components/layout/ui';
 import SearchForm from '../../../components/trade/SearchForm';
+import SortSelect from '../../../components/trade/SortSelect';
 import StockList from '../../../components/trade/StockList';
 
 export default async function TradePage({ searchParams }) {
   const sp = await searchParams;
   const user = await requireUser();
   const q = String(first(sp?.q) ?? '').trim();
+  const sort = String(first(sp?.sort) ?? '').trim() || 'trending';
   const entry = await currentEntry(user.id);
   const open = marketOpen();
 
@@ -28,6 +30,7 @@ export default async function TradePage({ searchParams }) {
         />
         <div className="trade-toolbar">
           <SearchForm q={q} />
+          <SortSelect q={q} sort={sort} />
           {q && list.length > 0 ? (
             <p className="caption trade-count">
               {list.length} {list.length === 1 ? 'result' : 'results'} for “{q}” ·{' '}
@@ -50,8 +53,8 @@ export default async function TradePage({ searchParams }) {
         </p>
       ) : null}
 
-      <Suspense key={q} fallback={<section className="card flush" aria-label="Loading stocks" aria-busy="true" />}>
-        <StockResults q={q} />
+      <Suspense key={`${q}:${sort}`} fallback={<section className="card flush" aria-label="Loading stocks" aria-busy="true" />}>
+        <StockResults q={q} sort={sort} />
       </Suspense>
 
       <p className="fineprint">
@@ -62,8 +65,8 @@ export default async function TradePage({ searchParams }) {
   );
 }
 
-async function StockResults({ q }) {
-  const list = await stocks(q);
+async function StockResults({ q, sort }) {
+  const list = await stocks(q, sort);
   return (
     <section className="card flush trade-board" aria-label="Stocks">
       {list.length === 0 ? (

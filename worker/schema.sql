@@ -30,8 +30,13 @@ ALTER TABLE latest_price ADD COLUMN IF NOT EXISTS prev_close NUMERIC(14,4);
 CREATE TABLE IF NOT EXISTS stocks (
     symbol TEXT PRIMARY KEY,
     name   TEXT    NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT true
+    active BOOLEAN NOT NULL DEFAULT true,
+    description TEXT,
+    industry TEXT
 );
+
+ALTER TABLE stocks ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE stocks ADD COLUMN IF NOT EXISTS industry TEXT;
 
 INSERT INTO stocks (symbol, name) VALUES
     ('AAPL',  'Apple'),
@@ -168,6 +173,8 @@ CREATE TABLE IF NOT EXISTS orders (
     fill_amount   NUMERIC(16,4),
     reject_reason TEXT
 );
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shares NUMERIC;
 
 CREATE INDEX IF NOT EXISTS orders_pending
     ON orders (placed_at) WHERE status = 'pending';

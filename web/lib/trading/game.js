@@ -241,22 +241,41 @@ export async function leaderboard(roomId) {
 
 // ------------------------------------------------------------------ stocks
 
-export async function stocks(search) {
+export async function stocks(search, sort) {
   const q = String(search ?? '').replace(/[^A-Za-z0-9 .&-]/g, '').trim().slice(0, 40);
+  let orderBy = 's.symbol';
+  switch (sort) {
+    case 'price-asc':
+      orderBy = 'lp.price ASC NULLS FIRST';
+      break;
+    case 'price-desc':
+      orderBy = 'lp.price DESC NULLS LAST';
+      break;
+    case 'symbol':
+      orderBy = 's.symbol ASC';
+      break;
+    case 'symbol-desc':
+      orderBy = 's.symbol DESC';
+      break;
+    case 'trending':
+    default:
+      orderBy = 'lp.price / NULLIF(lp.prev_close, 0) DESC NULLS LAST';
+      break;
+  }
   return query(
     `SELECT s.symbol, s.name, lp.price, lp.prev_close, lp.updated_at
      FROM stocks s
      LEFT JOIN latest_price lp ON lp.symbol = s.symbol
      WHERE s.active
        AND ($1::text = '' OR s.symbol ILIKE ($1::text || '%') OR s.name ILIKE ('%' || $1::text || '%'))
-     ORDER BY s.symbol`,
+     ORDER BY ${orderBy}`,
     [q]
   );
 }
 
 export async function stock(symbol) {
   return one(
-    `SELECT s.symbol, s.name, lp.price, lp.prev_close, lp.updated_at
+    `SELECT s.symbol, s.name, s.description, s.industry, lp.price, lp.prev_close, lp.updated_at
      FROM stocks s
      LEFT JOIN latest_price lp ON lp.symbol = s.symbol
      WHERE s.active AND s.symbol = $1`,
@@ -274,33 +293,42 @@ export async function tradeLimits(entry, symbol) {
          WHERE entry_id = $1 AND status = 'pending' AND side = 'buy' AND symbol = $2) AS pending_buys_here,
        (SELECT COALESCE(SUM(COALESCE(p.shares * lp.price, p.cost_basis)), 0)
           FROM positions p LEFT JOIN latest_price lp ON lp.symbol = p.symbol
-         WHERE p.entry_id = $1) AS invested,
+          WHERE p.entry_id = $1) AS invested,
        (SELECT p.shares FROM positions p WHERE p.entry_id = $1 AND p.symbol = $2) AS shares,
        (SELECT COALESCE(p.shares * lp.price, p.cost_basis)
           FROM positions p LEFT JOIN latest_price lp ON lp.symbol = p.symbol
-         WHERE p.entry_id = $1 AND p.symbol = $2) AS position_value`,
+          WHERE p.entry_id = $1 AND p.symbol = $2) AS position_value`,
     [entry.id, symbol]
   );
   const cash = Number(entry.cash);
   const portfolio = cash + Number(row.invested);
+  const priceRow = await query(
+    `SELECT lp.price FROM stocks s LEFT JOIN latest_price lp ON lp.symbol = s.symbol
+     WHERE s.symbol = $1 AND s.active`,
+    [symbol]
+  );
+  const price = priceRow.length > 0 ? Number(priceRow[0].price) : 0;
   const available = Math.max(0, cash - Number(row.pending_buys));
   const capRoom = Math.max(
     0,
     POSITION_CAP * portfolio - Number(row.position_value ?? 0) - Number(row.pending_buys_here)
   );
+  const maxShares = Math.floor(Math.min(available, capRoom) / price);
   return {
     available,
     capRoom,
     maxBuy: Math.floor(Math.min(available, capRoom) * 100) / 100,
+    maxShares,
     shares: Number(row.shares ?? 0),
     positionValue: Number(row.position_value ?? 0),
     portfolio,
+    price,
   };
 }
 
 // ------------------------------------------------------------------ orders
 
-export async function placeOrder(userId, { symbol, side, amount, sellAll }) {
+export async function placeOrder(userId, { symbol, side, shares, amount, sellAll }) {
   return transaction(async (c) => {
     const entry = (
       await c.query(
@@ -331,18 +359,20 @@ export async function placeOrder(userId, { symbol, side, amount, sellAll }) {
     const limits = await tradeLimits(entry, symbol);
 
     if (side === 'buy') {
-      if (!(amount >= 1)) throw new GameError('Enter at least $1.00.');
-      if (amount > limits.available + 0.005) {
+      if (!(shares >= 1)) throw new GameError('Enter at least 1 share.');
+      if (!Number.isInteger(shares)) throw new GameError('Whole shares only.');
+      const estimatedAmount = Math.round(shares * quote.price * 100) / 100;
+      if (estimatedAmount > limits.available + 0.005) {
         throw new GameError(`You have ${money(limits.available)} available to spend.`);
       }
-      if (amount > limits.capRoom + 0.005) {
+      if (estimatedAmount > limits.capRoom + 0.005) {
         throw new GameError(
           `No stock can be more than 20% of your portfolio. You can add up to ${money(limits.capRoom)} more of ${symbol}.`
         );
       }
       await c.query(
-        `INSERT INTO orders (entry_id, symbol, side, amount) VALUES ($1, $2, 'buy', $3)`,
-        [entry.id, symbol, amount]
+        `INSERT INTO orders (entry_id, symbol, side, amount, shares) VALUES ($1, $2, 'buy', $3, $4)`,
+        [entry.id, symbol, estimatedAmount, shares]
       );
       return;
     }
@@ -356,15 +386,18 @@ export async function placeOrder(userId, { symbol, side, amount, sellAll }) {
         );
         return;
       }
-      if (!(amount >= 1)) throw new GameError('Enter at least $1.00.');
-      if (amount > limits.positionValue + 0.005) {
+      if (!(shares >= 1)) throw new GameError('Enter at least 1 share.');
+      if (!Number.isInteger(shares)) throw new GameError('Whole shares only.');
+      if (shares > limits.shares) throw new GameError(`You don't own that many ${symbol}.`);
+      const estimatedAmount = Math.round(shares * quote.price * 100) / 100;
+      if (estimatedAmount > limits.positionValue + 0.005) {
         throw new GameError(
           `Your ${symbol} is worth about ${money(limits.positionValue)}. Use Sell all to sell everything.`
         );
       }
       await c.query(
-        `INSERT INTO orders (entry_id, symbol, side, amount) VALUES ($1, $2, 'sell', $3)`,
-        [entry.id, symbol, amount]
+        `INSERT INTO orders (entry_id, symbol, side, amount, shares) VALUES ($1, $2, 'sell', $3, $4)`,
+        [entry.id, symbol, estimatedAmount, shares]
       );
       return;
     }

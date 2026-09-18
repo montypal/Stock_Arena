@@ -501,3 +501,101 @@
     transform: none;
   }
 }
+
+/* --------------------------------------------- sort control (/trade) */
+
+/* Sits next to the search field in the toolbar; the select itself is glass
+   like the search input. */
+.sort-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.sort-label {
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.trade-sort {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--glass-sheen), var(--glass-tint);
+  color: var(--text);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.trade-sort option {
+  color: #06130c;
+}
+
+/* --------------------------------------- share stepper (/trade/[symbol]) */
+
+/* - N + stepper: an inner-glass well with a big tabular count between two
+   round buttons. */
+.field > .trade-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--inner);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px var(--inner-line);
+}
+
+.stepper-btn {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--glass-sheen), var(--glass-tint);
+  box-shadow: var(--glass-inset), var(--glass-shadow);
+  color: var(--green-hi);
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.12s var(--ease-out);
+}
+
+.stepper-btn:active {
+  transform: scale(0.92);
+}
+
+.stepper-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.stepper-value {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* --------------------------------- company description (/trade/[symbol]) */
+
+.trade-desc {
+  margin-top: 10px;
+  line-height: 1.55;
+}
+
+.trade-industry {
+  margin-top: 6px;
+}

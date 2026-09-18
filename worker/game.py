@@ -69,6 +69,17 @@ def symbols_missing_prices(conn):
     return [r[0] for r in rows]
 
 
+def symbols_missing_profiles(conn):
+    rows = conn.execute(
+        """
+        SELECT symbol FROM stocks
+        WHERE active AND (description IS NULL OR description = '')
+        ORDER BY symbol
+        """
+    ).fetchall()
+    return [r[0] for r in rows]
+
+
 # -------------------------------------------------------------------- fills
 
 def fill_pending_orders(conn, quotes, log):
@@ -112,7 +123,7 @@ def _reject(conn, order_id, reason):
 def _fill_one(conn, order_id, quotes):
     row = conn.execute(
         """
-        SELECT o.entry_id, o.symbol, o.side, o.amount, o.sell_all, o.placed_at,
+        SELECT o.entry_id, o.symbol, o.side, o.amount, o.shares, o.sell_all, o.placed_at,
                l.status, l.trading_closes_at
         FROM orders o
         JOIN entries e ON e.id = o.entry_id
@@ -125,7 +136,7 @@ def _fill_one(conn, order_id, quotes):
     if row is None:
         return None  # cancelled or handled since we listed it
 
-    entry_id, symbol, side, amount, sell_all, placed_at, league_status, closes_at = row
+    entry_id, symbol, side, amount, shares, sell_all, placed_at, league_status, closes_at = row
     price, _prev_close, observed_at = quotes[symbol]
 
     # Forward pricing: only a price observed after the order was placed fills it.
@@ -140,15 +151,21 @@ def _fill_one(conn, order_id, quotes):
     ).fetchone()[0]
 
     if side == "buy":
-        if amount is None or amount <= 0:
+        # Use shares if set (new share-based orders), otherwise fall back to amount (old dollar-based orders)
+        if shares is not None and shares > 0:
+            share_count = shares
+        elif amount is not None and amount > 0:
+            share_count = (amount / price).quantize(SHARES_Q, rounding=ROUND_DOWN)
+        else:
             return _reject(conn, order_id, "Invalid order amount.")
-        if amount > cash:
-            return _reject(conn, order_id, "Not enough cash when the order filled.")
-        shares = (amount / price).quantize(SHARES_Q, rounding=ROUND_DOWN)
-        if shares <= 0:
+        if share_count <= 0:
             return _reject(conn, order_id, "Order too small to buy any shares.")
+        fill_price = price
+        fill_amount = (share_count * fill_price).quantize(MONEY_Q, rounding=ROUND_HALF_UP)
+        if fill_amount > cash:
+            return _reject(conn, order_id, "Not enough cash when the order filled.")
         conn.execute(
-            "UPDATE entries SET cash = cash - %s WHERE id = %s", (amount, entry_id)
+            "UPDATE entries SET cash = cash - %s WHERE id = %s", (fill_amount, entry_id)
         )
         conn.execute(
             """
@@ -158,9 +175,9 @@ def _fill_one(conn, order_id, quotes):
               SET shares = positions.shares + EXCLUDED.shares,
                   cost_basis = positions.cost_basis + EXCLUDED.cost_basis
             """,
-            (entry_id, symbol, shares, amount),
+            (entry_id, symbol, share_count, fill_amount),
         )
-        fill_amount = amount
+        fill_shares = share_count
 
     else:
         pos = conn.execute(
@@ -176,18 +193,20 @@ def _fill_one(conn, order_id, quotes):
         held, cost_basis = pos
 
         if sell_all:
-            shares = held
+            share_count = held
+        elif shares is not None and shares > 0:
+            share_count = min(held, shares)
         else:
             if amount is None or amount <= 0:
                 return _reject(conn, order_id, "Invalid order amount.")
-            shares = min(held, (amount / price).quantize(SHARES_Q, rounding=ROUND_DOWN))
-        if (held - shares) * price < DUST:
-            shares = held
-        if shares <= 0:
+            share_count = min(held, (amount / price).quantize(SHARES_Q, rounding=ROUND_DOWN))
+        if (held - share_count) * price < DUST:
+            share_count = held
+        if share_count <= 0:
             return _reject(conn, order_id, "Order too small to sell any shares.")
 
-        proceeds = (shares * price).quantize(MONEY_Q, rounding=ROUND_HALF_UP)
-        remaining = held - shares
+        proceeds = (share_count * price).quantize(MONEY_Q, rounding=ROUND_HALF_UP)
+        remaining = held - share_count
         if remaining <= 0:
             conn.execute(
                 "DELETE FROM positions WHERE entry_id = %s AND symbol = %s",
@@ -214,7 +233,7 @@ def _fill_one(conn, order_id, quotes):
             fill_price = %s, fill_shares = %s, fill_amount = %s
         WHERE id = %s
         """,
-        (price, shares, fill_amount, order_id),
+        (price, share_count, fill_amount, order_id),
     )
     return "filled"
 

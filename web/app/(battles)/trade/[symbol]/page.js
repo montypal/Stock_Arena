@@ -8,7 +8,7 @@ import AutoRefresh from '../../../../components/layout/refresh';
 import Icon from '../../../../components/layout/icons';
 import SubmitButton from '../../../../components/layout/SubmitButton';
 import { Flash } from '../../../../components/layout/ui';
-import DollarField from '../../../../components/trade/DollarField';
+import ShareStepper from '../../../../components/trade/ShareStepper';
 import { changeTone, dayChange } from '../../../../components/trade/change';
 
 export default async function StockPage({ params, searchParams }) {
@@ -55,6 +55,16 @@ export default async function StockPage({ params, searchParams }) {
                 </p>
               ) : null}
               {s.updated_at ? <p className="caption">Updated {timeET(s.updated_at)} ET</p> : null}
+          {s.description ? (
+            <p className="caption trade-desc">
+              {s.description}
+            </p>
+          ) : null}
+          {s.industry && (
+            <p className="caption trade-industry">
+              {s.industry}
+            </p>
+          )}
             </div>
           </header>
 
@@ -107,19 +117,20 @@ export default async function StockPage({ params, searchParams }) {
               <form action={trade} className="stack">
                 <input type="hidden" name="symbol" value={symbol} />
                 <input type="hidden" name="side" value="buy" />
-                <DollarField
-                  max={limits.maxBuy >= 1 ? limits.maxBuy : undefined}
-                  disabled={limits.maxBuy < 1}
-                  hint={`Up to ${money(limits.maxBuy)}. ${
-                    limits.capRoom < limits.available
-                      ? `No stock can be more than ${capPct}% of your portfolio.`
-                      : "That's your available cash."
-                  }`}
-                />
+                <ShareStepper
+              min={0}
+              max={limits.maxShares}
+              defaultValue={0}
+              hint={`Up to ${limits.maxShares} shares. ${
+                limits.capRoom < limits.available
+                  ? `No stock can be more than ${capPct}% of your portfolio.`
+                  : "That's your available cash."
+              }`}
+            />
                 <SubmitButton
                   className="btn primary block"
                   pendingLabel="Placing order…"
-                  disabled={limits.maxBuy < 1}
+                  disabled={limits.maxShares < 1}
                 >
                   Place buy order
                 </SubmitButton>
@@ -135,7 +146,12 @@ export default async function StockPage({ params, searchParams }) {
               <form action={trade} className="stack">
                 <input type="hidden" name="symbol" value={symbol} />
                 <input type="hidden" name="side" value="sell" />
-                <DollarField max={maxSell} hint={`Up to ${money(maxSell)}. To sell every share, use Sell all.`} />
+                <ShareStepper
+              min={0}
+              max={limits.shares}
+              defaultValue={0}
+              hint={`Up to ${limits.shares} shares. To sell every share, use Sell all.`}
+            />
                 <SubmitButton className="btn outline block" pendingLabel="Placing order…">
                   Place sell order
                 </SubmitButton>
@@ -163,7 +179,7 @@ export default async function StockPage({ params, searchParams }) {
                     <span className="row-main">
                       <strong>{o.side === 'buy' ? 'Buy' : 'Sell'}</strong>
                       <span className="muted small">
-                        {o.sell_all ? 'All shares' : money(o.amount)} · placed {timeET(o.placed_at)}
+                        {o.sell_all ? 'All shares' : o.shares != null && o.shares > 0 ? `${o.shares} shares` : money(o.amount)} · placed {timeET(o.placed_at)}
                       </span>
                     </span>
                     <form action={cancel}>
