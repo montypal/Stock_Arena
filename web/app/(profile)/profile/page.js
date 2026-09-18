@@ -4,11 +4,73 @@ import { money, ordinal, signedMoney, tone, weekLabel } from '../../../lib/utils
 import { logout } from '../../../lib/actions';
 import { PageHead } from '../../../components/layout/ui';
 
+const ACH_DEFS = [
+  {
+    id: 'first',
+    label: 'First battle',
+    icon: <path d="M5 21V4M5 4h11l-2.5 4L16 12H5" />,
+  },
+  {
+    id: 'podium',
+    label: 'Podium finish',
+    icon: <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3" />,
+  },
+  {
+    id: 'champion',
+    label: 'Champion',
+    icon: <path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-3-5.4 3 1.1-6L3.2 9.4l6.1-.8L12 3Z" />,
+  },
+  {
+    id: 'veteran',
+    label: '5 leagues',
+    icon: <path d="M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5" />,
+  },
+  {
+    id: 'regular',
+    label: '10 leagues',
+    icon: <path d="M12 3l1.9 4.6 5 .4-3.8 3.3 1.1 4.9L12 13.7l-4.2 2.5 1.1-4.9L5.1 8l5-.4L12 3Z" />,
+  },
+  {
+    id: 'earner',
+    label: 'Coin earner',
+    icon: <path d="M12 3a9 9 0 1 0 9 9M12 7v10M9 9.5h5M9 14.5h5" />,
+  },
+  {
+    id: 'hot',
+    label: 'Top half',
+    icon: <path d="M3 17l6-6 4 4 8-8M15 7h6v6" />,
+  },
+  {
+    id: 'loyal',
+    label: '3 podiums',
+    icon: <path d="M6 21v-7a6 6 0 0 1 12 0v7M9 21h6M12 8v4" />,
+  },
+];
+
+const NOTIFS = [
+  { title: 'League ends Sunday', sub: 'Final ranks lock at the closing bell.' },
+  { title: 'Achievement near complete', sub: 'One more podium unlocks a new badge.' },
+  { title: 'Market opens 9:30 AM ET', sub: 'Queued orders fill when trading resumes.' },
+];
+
 export default async function ProfilePage() {
   const user = await requireUser();
   const history = await pastEntries(user.id);
   const wins = history.filter((e) => e.final_rank === 1).length;
   const podiums = history.filter((e) => e.final_rank && e.final_rank <= 3).length;
+  const totalCoins = history.reduce((sum, e) => sum + Number(e.coins_awarded ?? 0), 0);
+  const topHalf = history.filter((e) => e.final_rank && e.room_size && e.final_rank <= Math.ceil(e.room_size / 2)).length;
+
+  const unlocked = {
+    first: history.length >= 1,
+    podium: podiums >= 1,
+    champion: wins >= 1,
+    veteran: history.length >= 5,
+    regular: history.length >= 10,
+    earner: totalCoins > 0,
+    hot: topHalf >= 1,
+    loyal: podiums >= 3,
+  };
 
   return (
     <main>
@@ -32,6 +94,28 @@ export default async function ProfilePage() {
             <dd>{podiums}</dd>
           </div>
         </dl>
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2>Achievements</h2>
+          <span className="muted small">
+            {Object.values(unlocked).filter(Boolean).length} of {ACH_DEFS.length} unlocked
+          </span>
+        </div>
+        <ul className="ach-grid">
+          {ACH_DEFS.map((a) => {
+            const on = unlocked[a.id];
+            return (
+              <li key={a.id} className={on ? 'ach unlocked' : 'ach locked'}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  {a.icon}
+                </svg>
+                <span>{a.label}</span>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       <section className="card">
@@ -63,6 +147,23 @@ export default async function ProfilePage() {
             })}
           </ul>
         )}
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2>Notifications</h2>
+          <span className="muted small">Placeholder</span>
+        </div>
+        <ul className="rows">
+          {NOTIFS.map((n) => (
+            <li key={n.title} className="row">
+              <span className="row-main">
+                <strong>{n.title}</strong>
+                <span className="muted small">{n.sub}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <form action={logout}>

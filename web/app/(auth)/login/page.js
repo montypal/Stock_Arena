@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { currentUser } from '../../../lib/db/auth';
 import { login } from '../../../lib/actions';
@@ -25,9 +24,7 @@ export default async function LoginPage({ searchParams }) {
           Log in
         </button>
       </form>
-      <p className="muted center">
-        New here? <Link href="/signup">Create an account</Link>
-      </p>
+      <p className="fineprint">Contact your league admin for access.</p>
     </main>
   );
 }

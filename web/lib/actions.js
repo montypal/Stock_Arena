@@ -31,10 +31,10 @@ export async function signup(formData) {
   const password = String(formData.get('password') ?? '');
 
   if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
-    redirect(to('/signup', 'error', 'Usernames are 3–20 letters, numbers, or underscores.'));
+    redirect(to('/login', 'error', 'Usernames are 3–20 letters, numbers, or underscores.'));
   }
   if (password.length < 8) {
-    redirect(to('/signup', 'error', 'Passwords need at least 8 characters.'));
+    redirect(to('/login', 'error', 'Passwords need at least 8 characters.'));
   }
 
   const hash = await hashPassword(password);
@@ -50,7 +50,7 @@ export async function signup(formData) {
     if (err.code !== '23505') throw err;
     taken = true;
   }
-  if (taken) redirect(to('/signup', 'error', 'That username is taken.'));
+  if (taken) redirect(to('/login', 'error', 'That username is taken.'));
 
   await startSession(user.id);
   redirect('/league');

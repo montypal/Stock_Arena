@@ -605,3 +605,16 @@ Jackson OpenCode 9:24 PM 9/14/26
 Removed project `AGENTS.md` (`git rm`) and replaced `contextHistory.md` with Jackson's new version at his explicit request. Pulled `origin/main` first (already up to date, no new collaborator commits). All 10 prior Updates entries preserved verbatim; no history invented. New content: 16 Mandatory Agent Rules + completion checklist + stop-and-ask conditions, League Cash vs Coins split added to the App Overview, Tech Stack section kept. Note: project rules now live solely in `contextHistory.md`; the global `~/.config/opencode/AGENTS.md` (OpenCode operating config) was not touched. Follow-up: Aarav/Claude Code should read the new Mandatory Agent Rules — especially append-only history, no-invention, verify-changes, and secrets rules.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Green-black liquid-glass mobile UI overhaul + removed signup page UI at Jackson's request. Pulled/cloned `origin/main` clean before work; no collaborator commits conflicted; no destructive git ops; no secrets touched.
+
+* Deleted `web/app/(auth)/signup/page.js`. Rewired all `/signup` refs: `web/app/page.js` landing now has single Log in CTA, `web/app/(auth)/login/page.js` dropped Create-account link, `web/lib/actions.js` signup error redirects now point to `/login` (exported `signup()` kept unused so auth/session logic untouched).
+* New 5-tab black bottom bar in `web/components/layout/nav.js`: Home `/`, Battles `/league`, Daily `/daily`, Progress `/progress`, Profile `/profile`. Black `rgba(0,0,0,0.85)` + blur, green active pill, Home exact-match only, others prefix-match. Still gated to signed-in users in `web/app/layout.js` (themeColor `#04120a`).
+* New routes: `web/app/(daily)/daily/page.js` (`/daily` static news placeholders), `web/app/(progression)/progress/page.js` (`/progress` coins hero + career stats + Store coming soon, coins only). Home `/` for logged-in users is now an overview dashboard (value, P/L, place, cash + quick links) instead of redirect to `/league`; logged-out landing preserved.
+* Restyled `web/app/globals.css` to green-black gradient + liquid glass (blur 18px/saturate 140%, translucent surfaces, green glow primary); class names preserved. Profile adds achievements icon grid (derived from history/wins/podiums) + notifications placeholder; trading/league logic untouched in `worker/` and `web/lib/trading/game.js`.
+* Verified: `cmd /c npm run build` in `web/` green — routes `/`, `/daily`, `/league`, `/login`, `/profile`, `/progress`, `/status`, `/trade`, `/trade/[symbol]`, no `/signup`; `Select-String /signup` across `web/app+components+lib` = zero hits. LSP diagnostics unavailable (daemon unreachable), build used as evidence. `web/package-lock.json` again left untracked.
+* Follow-up: visual QA on a phone viewport (tabbar spacing, glass contrast), decide if logged-out users should see tabs, wire real Daily news + real achievements/notifications, commit + push when Jackson approves (left uncommitted per no-commit rule).
+
+---
