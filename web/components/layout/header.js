@@ -14,7 +14,7 @@ const HeaderRunner = dynamic(() => import('./HeaderRunner'), {
     <div className="runner-track" aria-hidden="true">
       <div className="runner-fly-static">
         <img
-          src="/models/textures/packed/Image_0"
+          src="/models/textures/packed/Image_0.png"
           className="runner-poster"
           alt=""
           aria-hidden="true"

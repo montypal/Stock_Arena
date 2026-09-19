@@ -6,17 +6,16 @@ import { useAnimations, useFBX } from '@react-three/drei';
 import * as THREE from 'three';
 
 const MODEL_URL = '/models/running.fbx';
-// DEBUG: temporarily enlarge the runner while verifying the Mixamo bull
-// actually renders. Set false to fit back into the 56x36 header slot.
 const DEBUG = false;
 const RUN_W = DEBUG ? 320 : 56;
 const RUN_H = DEBUG ? 180 : 36;
-// Target model height in camera units after auto-fit (bull ~17% larger).
 const FIT_H = 1.175;
-// The converter baked an absolute server path into the FBX texture slot.
-// Remap it to a local file so the real texture applies the moment it is
-// exported next to the model at web/public/models/textures/packed/Image_0.
-const LOCAL_TEXTURE = '/models/textures/packed/Image_0';
+// The FBX bakes a converter-absolute path ending in `Image_0` (no extension).
+// The file on disk is a PNG, so serve it with a `.png` extension — otherwise
+// Next/Vercel sends `application/octet-stream` for the extensionless file and
+// the texture decode + the <img> poster become unreliable. The original
+// extensionless file is kept in the repo; this is the canonical URL the app uses.
+const LOCAL_TEXTURE = '/models/textures/packed/Image_0.png';
 if (typeof window !== 'undefined') {
   THREE.DefaultLoadingManager.setURLModifier((url) =>
     url.includes('Image_0') ? LOCAL_TEXTURE : url
@@ -160,14 +159,50 @@ function RunnerModel({ onReady }) {
   // The loader resolves the file's texture path relative to /models/; a
   // missing file only logs a 404 while the authored colour still renders.
   useEffect(() => {
+    let cancelled = false;
+    const needsRepair = [];
+    let presentMaps = 0;
     fbx.traverse((o) => {
       if (!o.isMesh) return;
       const mats = Array.isArray(o.material) ? o.material : [o.material];
       mats.forEach((m) => {
         if (!m) return;
-        m.needsUpdate = true;
+        if (m.map) {
+          const img = m.map.image;
+          const broken = !img || (img.width !== undefined && img.width === 0);
+          if ('colorSpace' in m.map && THREE.SRGBColorSpace) m.map.colorSpace = THREE.SRGBColorSpace;
+          if (m.color) m.color.set('#ffffff');
+          m.needsUpdate = true;
+          if (broken) needsRepair.push(m);
+          else presentMaps += 1;
+        } else {
+          needsRepair.push(m);
+        }
       });
     });
+    console.log(`[HeaderRunner] material maps after FBX parse: ${presentMaps} ok, ${needsRepair.length} need texture`);
+    if (needsRepair.length > 0) {
+      new THREE.TextureLoader().load(
+        LOCAL_TEXTURE,
+        (tex) => {
+          if (cancelled) return;
+          if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+          tex.flipY = true;
+          tex.anisotropy = 4;
+          needsRepair.forEach((m) => {
+            m.map = tex;
+            if (m.color) m.color.set('#ffffff');
+            m.needsUpdate = true;
+          });
+          console.log(`[HeaderRunner] texture applied to ${needsRepair.length} material(s): ${LOCAL_TEXTURE}`);
+        },
+        undefined,
+        (err) => console.error(`[HeaderRunner] ERROR: texture 404 or decode failure: ${LOCAL_TEXTURE}`, err)
+      );
+    }
+    return () => {
+      cancelled = true;
+    };
   }, [fbx]);
 
   return (
@@ -191,6 +226,39 @@ export default function HeaderRunner() {
   // if WebGL/three fails — a static poster (same bull pixels) travels the
   // loop instead, so the header is never empty.
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const fbxRes = await fetch(MODEL_URL, { method: 'GET' });
+        if (!alive) return;
+        console.log(`[HeaderRunner] diag fbx ${fbxRes.status} ${MODEL_URL} (${fbxRes.headers.get('content-type') || 'no-ctype'})`);
+        if (!fbxRes.ok) console.error(`[HeaderRunner] ERROR: FBX ${fbxRes.status} — check Vercel Root Directory is web and web/public/models/running.fbx is deployed.`);
+      } catch (e) {
+        console.error(`[HeaderRunner] ERROR: FBX fetch failed — likely 404 or network: ${MODEL_URL}`, e);
+      }
+      try {
+        const texRes = await fetch(LOCAL_TEXTURE, { method: 'GET' });
+        if (!alive) return;
+        console.log(`[HeaderRunner] diag texture ${texRes.status} ${LOCAL_TEXTURE} (${texRes.headers.get('content-type') || 'no-ctype'})`);
+        if (!texRes.ok) console.error(`[HeaderRunner] ERROR: texture ${texRes.status} — check web/public/models/textures/packed/Image_0.png is deployed.`);
+      } catch (e) {
+        console.error(`[HeaderRunner] ERROR: texture fetch failed: ${LOCAL_TEXTURE}`, e);
+      }
+      try {
+        const c = document.createElement('canvas');
+        const gl = c.getContext('webgl2') || c.getContext('webgl');
+        console.log(`[HeaderRunner] diag webgl: ${gl ? 'available' : 'UNAVAILABLE'}`);
+        if (!gl) console.error('[HeaderRunner] ERROR: WebGL unavailable — 3D cannot render, poster stays.');
+      } catch (e) {
+        console.error('[HeaderRunner] ERROR: WebGL check threw', e);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -264,7 +332,7 @@ export default function HeaderRunner() {
       >
         {!ready ? (
           <img
-            src="/models/textures/packed/Image_0"
+            src="/models/textures/packed/Image_0.png"
             className="runner-poster"
             alt=""
             aria-hidden="true"
