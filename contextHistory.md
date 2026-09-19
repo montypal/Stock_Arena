@@ -876,3 +876,25 @@ Full-color + right-place pass at Jackson's request ("model in full color running
 * Follow-up: commit + push (including the untracked `Image_0.png`) so Vercel actually deploys it; confirm Vercel Root Directory is `web`; hard-refresh and check F12 `diag fbx/texture/webgl` lines.
 
 ---
+
+Jackson OpenCode 9/19/26
+
+Empty-console diagnosis at Jackson's request (F12 showed nothing, Network found nothing — the runner never executed). All prior signals lived inside the `next/dynamic ssr:false` chunk, so a stalled chunk or stale deploy leaves zero traces by design.
+
+* **Break point:** `layout.js` → `AppHeader` → dynamic `HeaderRunner`. The loading fallback is SSR HTML (always present); every `console.log` and every `fetch` was inside the lazy chunk. No chunk = no logs + no `running.fbx` request — exactly the reported symptom. Also possible: stale Vercel deploy predating the diag code, or console filtered to Errors only.
+* **Fix (staged signals, same FBX/clip/texture):** `header.js` (page bundle, not the three.js chunk) now logs `[Header] mounted` and sets `window.__SA_RUNNER='header-mounted'`; chunk top logs `[HeaderRunner] chunk loaded` (`chunk-loaded`); component mount logs `[HeaderRunner] component mounted` (`runner-mounted`); Canvas `onCreated` logs (`canvas-created`). Whichever stage is missing tells us where it stalls. Outer `RunnerErrorBoundary` added around `Canvas` so a WebGL throw keeps the poster instead of blanking the header.
+* **Never-empty fallback:** both poster `<img>` tags hide themselves on error, and `.runner-fly` / `.runner-fly-static` now carry a gold/green gradient wash behind the poster — purely a behind-pixels diagnostic shape, covered whenever the real PNG or 3D renders, so a total asset failure still shows motion in the track.
+* **Verified:** `cmd /c npm run build` in `web/` green (Next 15.5.25, all routes). Left uncommitted per no-commit rule.
+* Follow-up: commit + push; hard-refresh; report the LAST `[Header]`/`[HeaderRunner]` line seen plus `window.__SA_RUNNER` value — that single value pinpoints the stall.
+
+---
+
+Jackson OpenCode 9/19/26
+
+Deterministic texture fix at Jackson's request ("now fix the problem"). Same `running.fbx`, same Mixamo clip, staged signals kept.
+
+* **Fix:** the FBX's stored texture URLs are dead by construction (external-only, zero embedded pixels, proven from `fbx.txt` forensics), so the loader path is no longer trusted conditionally — the served `Image_0.png` is now assigned to EVERY material unconditionally (SRGB, flipY, anisotropy 4, color forced white), erroring only if the file itself 404s or fails decode. Diag checks switched GET→HEAD so the 6.3 MB FBX isn't downloaded twice.
+* **Verified:** `cmd /c npm run build` green (Next 15.5.25, all routes); production server proved both URLs serve locally — FBX `200 application/octet-stream 6340128 bytes`, texture `200 image/png 731427 bytes`. Server stopped, scratch log removed, port 3000 free. Left uncommitted per no-commit rule.
+* Follow-up: commit + push, confirm Vercel Root Directory is `web`, hard-refresh live and check the header.
+
+---
