@@ -61,7 +61,7 @@ const ENTRY_SELECT = `
          e.starting_balance, e.cash, e.joined_at,
          e.final_value, e.final_rank, e.coins_awarded,
          l.tier, l.starts_at, l.trading_closes_at, l.ends_at, l.status AS league_status,
-         (l.status = 'open' AND now() < l.trading_closes_at) AS trading_open,
+         (l.status = 'open' AND now() < l.ends_at) AS trading_open,
          (now() < l.starts_at) AS not_started,
          (SELECT count(*) FROM rooms r2
            WHERE r2.league_id = e.league_id AND r2.id <= e.room_id) AS room_number,
@@ -74,10 +74,24 @@ export async function currentEntry(userId) {
   return one(`${ENTRY_SELECT} WHERE e.user_id = $1 ORDER BY e.week_start DESC LIMIT 1`, [userId]);
 }
 
+export async function currentEntries(userId) {
+  return query(
+    `${ENTRY_SELECT} WHERE e.user_id = $1 ORDER BY e.week_start DESC`,
+    [userId]
+  );
+}
+
 export async function pastEntries(userId) {
   return query(
     `${ENTRY_SELECT} WHERE e.user_id = $1 AND l.status = 'settled' ORDER BY e.week_start DESC LIMIT 20`,
     [userId]
+  );
+}
+
+export async function entriesForWeek(userId, week) {
+  return query(
+    `${ENTRY_SELECT} WHERE e.user_id = $1 AND e.week_start = $2::date ORDER BY e.league_id`,
+    [userId, week]
   );
 }
 
@@ -130,11 +144,13 @@ export async function joinLeague(userId, tier) {
     return await transaction(async (c) => {
       const { ws } = (await c.query(`SELECT ${JOINABLE_WEEK} AS ws`)).rows[0];
 
-      const taken = await c.query(
-        'SELECT 1 FROM entries WHERE user_id = $1 AND week_start = $2::date',
-        [userId, ws]
+      const existing = await c.query(
+        'SELECT 1 FROM entries WHERE user_id = $1 AND league_id = (SELECT id FROM leagues WHERE tier = $2 AND week_start = $3::date)',
+        [userId, tier, ws]
       );
-      if (taken.rowCount) throw new GameError("You've already joined a league this week.");
+      if (existing.rowCount) {
+        throw new GameError(`You've already joined the ${tierInfo(tier).label} this week.`);
+      }
 
       const league = (
         await c.query(
@@ -155,7 +171,6 @@ export async function joinLeague(userId, tier) {
            WHERE r.league_id = $1
              AND r.capacity > (SELECT count(*) FROM entries e WHERE e.room_id = r.id)
            ORDER BY r.id
-           LIMIT 1
            FOR UPDATE`,
           [league.id]
         )
@@ -177,10 +192,11 @@ export async function joinLeague(userId, tier) {
       return ws;
     });
   } catch (err) {
-    // Two taps on Join at once: the second hits the unique (user, week) key.
-    if (err.code === '23505') throw new GameError("You've already joined a league this week.");
+    if (err.code === '23505') {
+      throw new GameError(`You've already joined the ${tierInfo(tier).label} this week.`);
+    }
     throw err;
-  }
+}
 }
 
 // -------------------------------------------------------------- portfolio
@@ -324,21 +340,22 @@ export async function tradeLimits(entry, symbol) {
 
 // ------------------------------------------------------------------ orders
 
-export async function placeOrder(userId, { symbol, side, shares, amount, sellAll }) {
+export async function placeOrder(userId, { symbol, side, shares, amount, sellAll, entryId }) {
   return transaction(async (c) => {
-    const entry = (
-      await c.query(
-        `SELECT e.id, e.cash, (l.status = 'open' AND now() < l.trading_closes_at) AS trading_open
-         FROM entries e JOIN leagues l ON l.id = e.league_id
-         WHERE e.user_id = $1
-         ORDER BY e.week_start DESC
-         LIMIT 1
-         FOR UPDATE OF e`,
-        [userId]
-      )
-    ).rows[0];
-    if (!entry) throw new GameError('Join a league before trading.');
-    if (!entry.trading_open) throw new GameError('Trading is closed for this league.');
+    const result = await c.query(
+      `SELECT e.id, e.cash, (l.status = 'open' AND now() < l.ends_at) AS trading_open
+       FROM entries e JOIN leagues l ON l.id = e.league_id
+       WHERE e.user_id = $1 ORDER BY e.week_start DESC, e.id DESC`,
+      [userId]
+    );
+    if (result.rowCount === 0) throw new GameError('Join a league before trading.');
+
+    const targetEntry = entryId
+      ? result.rows.find((e) => String(e.id) === String(entryId))
+      : result.rows.find((e) => e.trading_open) || result.rows[0];
+    if (!targetEntry) throw new GameError('Join a league before trading.');
+
+    if (!targetEntry.trading_open) throw new GameError('Trading is closed for this league.');
 
     const quote = (
       await c.query(
@@ -352,7 +369,7 @@ export async function placeOrder(userId, { symbol, side, shares, amount, sellAll
       throw new GameError("This stock doesn't have a price yet. Try again after the next update.");
     }
 
-    const limits = await tradeLimits(entry, symbol);
+    const limits = await tradeLimits(targetEntry, symbol);
 
     if (side === 'buy') {
       if (!(shares >= 1)) throw new GameError('Enter at least 1 share.');
@@ -363,7 +380,7 @@ export async function placeOrder(userId, { symbol, side, shares, amount, sellAll
       }
       await c.query(
         `INSERT INTO orders (entry_id, symbol, side, amount, shares) VALUES ($1, $2, 'buy', $3, $4)`,
-        [entry.id, symbol, estimatedAmount, shares]
+        [targetEntry.id, symbol, estimatedAmount, shares]
       );
       return;
     }
@@ -373,7 +390,7 @@ export async function placeOrder(userId, { symbol, side, shares, amount, sellAll
       if (sellAll) {
         await c.query(
           `INSERT INTO orders (entry_id, symbol, side, sell_all) VALUES ($1, $2, 'sell', true)`,
-          [entry.id, symbol]
+          [targetEntry.id, symbol]
         );
         return;
       }
@@ -388,7 +405,7 @@ export async function placeOrder(userId, { symbol, side, shares, amount, sellAll
       }
       await c.query(
         `INSERT INTO orders (entry_id, symbol, side, amount, shares) VALUES ($1, $2, 'sell', $3, $4)`,
-        [entry.id, symbol, estimatedAmount, shares]
+        [targetEntry.id, symbol, estimatedAmount, shares]
       );
       return;
     }

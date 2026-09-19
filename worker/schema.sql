@@ -126,22 +126,34 @@ CREATE TABLE IF NOT EXISTS rooms (
 
 CREATE INDEX IF NOT EXISTS rooms_league ON rooms (league_id);
 
--- A player's seat in one league for one week. One league per week.
-CREATE TABLE IF NOT EXISTS entries (
-    id               BIGSERIAL PRIMARY KEY,
-    user_id          BIGINT NOT NULL REFERENCES users(id),
-    league_id        BIGINT NOT NULL REFERENCES leagues(id),
-    room_id          BIGINT NOT NULL REFERENCES rooms(id),
-    week_start       DATE   NOT NULL,
-    starting_balance NUMERIC(16,4) NOT NULL,
-    cash             NUMERIC(16,4) NOT NULL,
-    joined_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-    -- Written once, by settlement.
-    final_value      NUMERIC(16,4),
-    final_rank       INT,
-    coins_awarded    INT,
-    UNIQUE (user_id, week_start)
-);
+-- A player's seat in one league for one week.
+-- UNIQUE changed from (user_id, week_start) to (user_id, league_id)
+-- so a player may join each tier at most once per week (up to 3 entries/week),
+-- but may join different tiers in the same week.
+-- The old UNIQUE (user_id, week_start) prevented joining different tiers
+-- in the same week; the new UNIQUE (user_id, league_id) allows multiple
+-- entries (different leagues) per week while preventing re-joining the
+-- same tier/league twice.
+DO $$
+BEGIN
+    -- Drop old unique constraint (user_id, week_start) if it exists.
+    IF EXISTS (SELECT 1 FROM information_schema.table_constraints
+               WHERE table_name = 'entries'
+               AND constraint_type = 'UNIQUE'
+               AND UPPER(constraint_name) LIKE '%USER_ID%WEEK_START%') THEN
+        ALTER TABLE entries DROP CONSTRAINT entries_user_id_week_start_key;
+    END IF;
+
+    -- Add new unique constraint (user_id, league_id) if it does not exist.
+    -- This prevents re-joining the same tier league in the same week
+    -- while allowing entries in different tiers within the same week.
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                   WHERE table_name = 'entries'
+                   AND constraint_type = 'UNIQUE'
+                   AND UPPER(constraint_name) LIKE '%USER_ID%LEAGUE_ID%') THEN
+        ALTER TABLE entries ADD CONSTRAINT entries_user_id_league_id_key UNIQUE (user_id, league_id);
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS entries_room   ON entries (room_id);
 CREATE INDEX IF NOT EXISTS entries_league ON entries (league_id);

@@ -278,7 +278,7 @@ Shows total value, starting balance, total profit and loss, stocks owned, amount
 
 ## Trading
 
-Buy as much as you want as long as you have the money — no per-stock cap and no share-count cap beyond affordability. Enter any stock on Monday, trade freely while the week is open, then hold for settlement. Buy and sell by share count (whole shares) with a -/+ stepper; pending orders fill at the next observed real price after you place them.
+You can buy and sell whenever the league is open (Monday 00:00 ET until settlement the next Monday) — no Friday lock. Buy as much as you want as long as you have the money — no per-stock cap and no share-count cap beyond affordability. Enter any stock while open, trade by share count (whole shares) with a -/+ stepper; pending orders fill at the next observed real price after you place them. There is exactly one 1K, one 10K, and one 100K league per week; a player may join each at most once (up to 3 entries/week, never twice the same tier).
 
 ## Achievements
 
@@ -751,5 +751,18 @@ Added live cost + affordability gray-out to the buy widget at Jackson's request.
 * **Buy widget (`web/components/trade/BuySharesForm.js`, new client component, used in `/trade/[symbol]`):** the same widget as the stepper + order button now shows the live total (`Total ≈ $X for N shares`, updating per tap; button itself reads `Buy N for ≈ $X`). The **+** button grays out the moment another share is unaffordable, and the **buy button** is disabled until the count is ≥1 and affordable — no more tappable-but-doomed orders. Sell stepper unchanged (already capped at held shares).
 * **Verified:** `npm run build` green (all routes incl. `/trade/[symbol]`).
 * Follow-up: Vercel build check.
+
+---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Made leagues one-per-tier + always-trade at Jackson's request (git pull already up to date; no destructive ops; no secrets). Interpreted "but you can join a 1k league twice" as a typo for "can't" (you just said "you can only join each league once") — so same-tier re-joins are now rejected.
+
+* **Leagues:** exactly one 1K, one 10K, one 100K per week (`leagues` UNIQUE(tier, week_start) kept). A player may now hold up to 3 entries in one week — one per tier — instead of 1/week. `worker/schema.sql` idempotently swaps `entries` UNIQUE from (user_id, week_start) to (user_id, league_id) via a DO block (drop old if exists, add new if missing) so re-applying is safe; `entries` UNIQUE(user_id, league_id) prevents joining the same tier twice while allowing other tiers.
+* **Join:** `web/lib/trading/game.js` `joinLeague` now checks existing entry for that tier's league_id for the joinable week and throws tier-specific `You've already joined the X League this week.`; workers `23505` fallback updated to same message. Added `currentEntries(userId)` and `entriesForWeek(userId, week)` helpers; kept `currentEntry` for compat.
+* **Trading whenever:** `ENTRY_SELECT` `trading_open` now `l.status='open' AND now() < l.ends_at` (not `trading_closes_at`), so buy/sell stays open until settlement Monday 00:00 ET. `placeOrder` now looks up all open entries for the user, picks the requested `entryId` or the first open league (fallback to most recent), and enforces `trading_open` on that entry; supports `entryId` param for future multi-league trade forms. No per-stock cap (already removed) — only affordability.
+* **Review fixes:** subagent dropped `pastEntries(userId)` (broke 2 pages) — restored; `placeOrder` used `entry.rowLength` (wrong pg field) — fixed to `rowCount` + proper `String(id)` lookup and ordered query; build went from warning to clean.
+* **Verified:** `npm run build` green (5/5, warnings gone); worker `py_compile` clean + 6/6 `test_game` pass; forward pricing, payouts, profile still use real data via worker only.
+* Follow-up: wire a tier/entry picker into `/trade` + `/` when a player is in >1 league this week (currently trade picks the first open league); update `## Weekly Game Loop` / `## Trading` wording to "always open" in next doc pass; confirm Railway applies the new constraint on next worker start.
 
 ---
