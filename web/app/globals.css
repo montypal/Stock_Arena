@@ -523,6 +523,9 @@ body.signed-in .app {
   transform: translate3d(-80px, -50%, 0);
   opacity: 0;
   will-change: transform;
+  border-radius: 12px;
+  background: radial-gradient(circle at 35% 60%, #d8b25c 0 18%, #2f7a3d 19% 42%, rgba(47, 122, 61, 0) 70%),
+    linear-gradient(135deg, rgba(216, 178, 92, 0.9), rgba(47, 122, 61, 0.9));
 }
 
 .runner-fly canvas {
@@ -557,6 +560,9 @@ body.signed-in .app {
   margin-top: -18px;
   animation: runner-across 4.6s linear infinite;
   pointer-events: none;
+  border-radius: 12px;
+  background: radial-gradient(circle at 35% 60%, #d8b25c 0 18%, #2f7a3d 19% 42%, rgba(47, 122, 61, 0) 70%),
+    linear-gradient(135deg, rgba(216, 178, 92, 0.9), rgba(47, 122, 61, 0.9));
 }
 
 .runner-fly-static .runner-poster {
