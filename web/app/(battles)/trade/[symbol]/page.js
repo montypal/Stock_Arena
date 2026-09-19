@@ -9,6 +9,7 @@ import Icon from '../../../../components/layout/icons';
 import SubmitButton from '../../../../components/layout/SubmitButton';
 import { Flash } from '../../../../components/layout/ui';
 import ShareStepper from '../../../../components/trade/ShareStepper';
+import BuySharesForm from '../../../../components/trade/BuySharesForm';
 import { changeTone, dayChange } from '../../../../components/trade/change';
 
 export default async function StockPage({ params, searchParams }) {
@@ -115,19 +116,12 @@ export default async function StockPage({ params, searchParams }) {
               <form action={trade} className="stack">
                 <input type="hidden" name="symbol" value={symbol} />
                 <input type="hidden" name="side" value="buy" />
-                <ShareStepper
-              min={0}
-              max={limits.maxShares}
-              defaultValue={0}
-              hint={`Up to ${limits.maxShares} shares — buy as many as you can afford.`}
-            />
-                <SubmitButton
-                  className="btn primary block"
-                  pendingLabel="Placing order…"
-                  disabled={limits.maxShares < 1}
-                >
-                  Place buy order
-                </SubmitButton>
+                <BuySharesForm
+                  symbol={symbol}
+                  price={Number(s.price)}
+                  available={limits.available}
+                  maxShares={limits.maxShares}
+                />
               </form>
             </section>
           ) : null}

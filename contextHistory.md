@@ -743,3 +743,13 @@ Removed the 20% per-stock cap + the ~15-share effective limit at Jackson's reque
 * **Verified:** `npm run build` green (all routes); worker tests unchanged (payout/ranking, not trading). Follow-up: design/wording around "free trade" to be tuned if needed.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Added live cost + affordability gray-out to the buy widget at Jackson's request. No pull needed (already up to date); no destructive ops; no secrets.
+
+* **Buy widget (`web/components/trade/BuySharesForm.js`, new client component, used in `/trade/[symbol]`):** the same widget as the stepper + order button now shows the live total (`Total ≈ $X for N shares`, updating per tap; button itself reads `Buy N for ≈ $X`). The **+** button grays out the moment another share is unaffordable, and the **buy button** is disabled until the count is ≥1 and affordable — no more tappable-but-doomed orders. Sell stepper unchanged (already capped at held shares).
+* **Verified:** `npm run build` green (all routes incl. `/trade/[symbol]`).
+* Follow-up: Vercel build check.
+
+---
