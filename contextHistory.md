@@ -853,3 +853,26 @@ Runner third layer at Jackson's request — his screenshot shows an EMPTY track 
 * Follow-up: Jackson — confirm Vercel deployed this commit; hard-refresh (Cmd/Ctrl+Shift+R); if the track is STILL empty, send the deployment commit hash + browser/device + any F12 console errors, because local production proves all three layers render.
 
 ---
+
+Jackson OpenCode 9/19/26
+
+Fixed the gray-localhost / invisible-on-Vercel header runner at Jackson's request — extensionless texture was the root cause, not the animation code. No FBX replacement, no fake materials, animation pinning untouched.
+
+* **Cause LOCALHOST (gray):** `web/public/models/textures/packed/Image_0` is a valid PNG (magic `89 50 4E 47`, 731 KB) but has no extension, so Next serves it as `application/octet-stream`. The FBX `base_color_texture` slot remapped to that URL, so the map decode was unreliable and the bull rendered gray. Verified: both files are git-tracked (`running.fbx` 6.3 MB, `Image_0` 731 KB), not gitignored.
+* **Cause VERCEL (invisible):** same extensionless URL served from the Vercel CDN plus both poster `<img>` layers (`HeaderRunner.js` + `header.js` fallback) pointing at the same extensionless URL — so when the texture URL fails the poster fails too and the track looks empty. If Vercel Root Directory is anything other than `web`, `/models/*` 404s entirely with the same symptom.
+* **Fix:** copied byte-identical `Image_0` to `web/public/models/textures/packed/Image_0.png` (new file, original kept); `HeaderRunner.js` `LOCAL_TEXTURE` now `/models/textures/packed/Image_0.png` with the `setURLModifier` still catching any `Image_0` absolute path from the FBX; both poster `<img>` src updated to `.png`; FBX maps now forced to `SRGBColorSpace` and, if the FBX arrives with zero maps, an explicit `TextureLoader` fallback assigns the `.png` and logs applied count; new fetch-based diagnostics log `diag fbx <status>` / `diag texture <status>` / `diag webgl` so F12 console distinguishes FBX 404 vs texture 404 vs parse error vs WebGL unavailable vs positioned-off-camera.
+* **Verified:** `cmd /c npm run build` in `web/` green (Next 15.5.25, all routes); `Image_0.png` identical bytes to `Image_0`; LSP unavailable (typescript server not installed — build used as evidence). Left uncommitted per no-commit rule: `HeaderRunner.js`, `header.js`, `contextHistory.md` modified + `Image_0.png` untracked.
+* Follow-up: `git add` + commit + push the `.png` + code; confirm Vercel Root Directory is `web`; hard-refresh live site and paste the three `diag` console lines if the track is still empty.
+
+---
+
+Jackson OpenCode 9/19/26
+
+Full-color + right-place pass at Jackson's request ("model in full color running in the right place"). Same FBX, same Mixamo clip, no fake materials. Found the prior `.png` fix was still local-only (remote `origin/main` still at `f7f824f`), so Vercel never received it.
+
+* **Texture (gray fix):** `HeaderRunner.js` now repairs every material that is missing a map OR has a map with no image, assigns `/models/textures/packed/Image_0.png` via `TextureLoader` (SRGB, flipY, anisotropy 4), and forces `material.color` to white so the FBX gray diffuse no longer multiplies the map dull. Existing good maps also get SRGB + white + `needsUpdate`. Logs `ok` vs `need texture` counts plus applied count; 404/decode still errors clearly.
+* **Place (verified, unchanged):** `app-header-inner` flex `space-between`, `.runner-track` flex `1 1 auto` between brand and coin chip, 56x36 flyer, 2.6 s traverse + 2 s gap, camera `[0, 0.62, 2.15]` fov 35 framing `FIT_H 1.175`, rig rotated to face +X, Hips X/Z pinned with Y bob kept, poster unmounts on `ready`. No layout shift.
+* **Verified:** `cmd /c npm run build` in `web/` green (Next 15.5.25, all routes); grep confirms all runtime URLs use `Image_0.png` (only the remap matcher still mentions bare `Image_0` to catch the FBX absolute path); `Image_0.png` 731427 bytes, PNG magic `89504e47`. Left uncommitted per no-commit rule: `HeaderRunner.js`, `header.js`, `contextHistory.md` modified + `Image_0.png` untracked + `web/package-lock.json` untracked.
+* Follow-up: commit + push (including the untracked `Image_0.png`) so Vercel actually deploys it; confirm Vercel Root Directory is `web`; hard-refresh and check F12 `diag fbx/texture/webgl` lines.
+
+---
