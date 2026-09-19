@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -19,6 +20,9 @@ const HeaderRunner = dynamic(() => import('./HeaderRunner'), {
           alt=""
           aria-hidden="true"
           draggable={false}
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+          }}
         />
       </div>
     </div>
@@ -31,6 +35,11 @@ const HeaderRunner = dynamic(() => import('./HeaderRunner'), {
 export default function AppHeader({ coins }) {
   const path = usePathname() ?? '';
   const signedIn = coins !== null && coins !== undefined;
+
+  useEffect(() => {
+    window.__SA_RUNNER = 'header-mounted';
+    console.log('[Header] mounted — 3D runner chunk loading (or fallback showing)');
+  }, []);
 
   return (
     <header className="app-header">

@@ -20,6 +20,8 @@ if (typeof window !== 'undefined') {
   THREE.DefaultLoadingManager.setURLModifier((url) =>
     url.includes('Image_0') ? LOCAL_TEXTURE : url
   );
+  window.__SA_RUNNER = 'chunk-loaded';
+  console.log('[HeaderRunner] chunk loaded — mounting 3D runner');
 }
 
 // Warm the fetch so the first traversal already has the model.
@@ -155,51 +157,42 @@ function RunnerModel({ onReady }) {
     }
   });
 
-  // Texture policy: preserve the FBX's own materials — never null the map.
-  // The loader resolves the file's texture path relative to /models/; a
-  // missing file only logs a 404 while the authored colour still renders.
+  // The FBX's stored texture URLs are dead converter paths by construction
+  // (external-only file, zero embedded pixels), so the served .png is
+  // assigned to every material unconditionally.
   useEffect(() => {
     let cancelled = false;
-    const needsRepair = [];
-    let presentMaps = 0;
+    const mats = [];
     fbx.traverse((o) => {
       if (!o.isMesh) return;
-      const mats = Array.isArray(o.material) ? o.material : [o.material];
-      mats.forEach((m) => {
-        if (!m) return;
-        if (m.map) {
-          const img = m.map.image;
-          const broken = !img || (img.width !== undefined && img.width === 0);
-          if ('colorSpace' in m.map && THREE.SRGBColorSpace) m.map.colorSpace = THREE.SRGBColorSpace;
-          if (m.color) m.color.set('#ffffff');
-          m.needsUpdate = true;
-          if (broken) needsRepair.push(m);
-          else presentMaps += 1;
-        } else {
-          needsRepair.push(m);
-        }
+      const list = Array.isArray(o.material) ? o.material : [o.material];
+      list.forEach((m) => {
+        if (m && !mats.includes(m)) mats.push(m);
       });
     });
-    console.log(`[HeaderRunner] material maps after FBX parse: ${presentMaps} ok, ${needsRepair.length} need texture`);
-    if (needsRepair.length > 0) {
-      new THREE.TextureLoader().load(
-        LOCAL_TEXTURE,
-        (tex) => {
-          if (cancelled) return;
-          if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
-          tex.flipY = true;
-          tex.anisotropy = 4;
-          needsRepair.forEach((m) => {
-            m.map = tex;
-            if (m.color) m.color.set('#ffffff');
-            m.needsUpdate = true;
-          });
-          console.log(`[HeaderRunner] texture applied to ${needsRepair.length} material(s): ${LOCAL_TEXTURE}`);
-        },
-        undefined,
-        (err) => console.error(`[HeaderRunner] ERROR: texture 404 or decode failure: ${LOCAL_TEXTURE}`, err)
-      );
+    if (mats.length === 0) {
+      console.error('[HeaderRunner] ERROR: FBX has no materials — texture has nowhere to go.');
+      return () => {
+        cancelled = true;
+      };
     }
+    new THREE.TextureLoader().load(
+      LOCAL_TEXTURE,
+      (tex) => {
+        if (cancelled) return;
+        if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+        tex.flipY = true;
+        tex.anisotropy = 4;
+        mats.forEach((m) => {
+          m.map = tex;
+          if (m.color) m.color.set('#ffffff');
+          m.needsUpdate = true;
+        });
+        console.log(`[HeaderRunner] texture applied to ${mats.length} material(s): ${LOCAL_TEXTURE}`);
+      },
+      undefined,
+      (err) => console.error(`[HeaderRunner] ERROR: texture 404 or decode failure: ${LOCAL_TEXTURE}`, err)
+    );
     return () => {
       cancelled = true;
     };
@@ -229,9 +222,11 @@ export default function HeaderRunner() {
 
   useEffect(() => {
     let alive = true;
+    window.__SA_RUNNER = 'runner-mounted';
+    console.log('[HeaderRunner] component mounted — checking files + WebGL');
     (async () => {
       try {
-        const fbxRes = await fetch(MODEL_URL, { method: 'GET' });
+        const fbxRes = await fetch(MODEL_URL, { method: 'HEAD' });
         if (!alive) return;
         console.log(`[HeaderRunner] diag fbx ${fbxRes.status} ${MODEL_URL} (${fbxRes.headers.get('content-type') || 'no-ctype'})`);
         if (!fbxRes.ok) console.error(`[HeaderRunner] ERROR: FBX ${fbxRes.status} — check Vercel Root Directory is web and web/public/models/running.fbx is deployed.`);
@@ -239,7 +234,7 @@ export default function HeaderRunner() {
         console.error(`[HeaderRunner] ERROR: FBX fetch failed — likely 404 or network: ${MODEL_URL}`, e);
       }
       try {
-        const texRes = await fetch(LOCAL_TEXTURE, { method: 'GET' });
+        const texRes = await fetch(LOCAL_TEXTURE, { method: 'HEAD' });
         if (!alive) return;
         console.log(`[HeaderRunner] diag texture ${texRes.status} ${LOCAL_TEXTURE} (${texRes.headers.get('content-type') || 'no-ctype'})`);
         if (!texRes.ok) console.error(`[HeaderRunner] ERROR: texture ${texRes.status} — check web/public/models/textures/packed/Image_0.png is deployed.`);
@@ -337,23 +332,32 @@ export default function HeaderRunner() {
             alt=""
             aria-hidden="true"
             draggable={false}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
           />
         ) : null}
-        <Canvas
-          gl={{ alpha: true, antialias: true }}
-          dpr={[1, 1.5]}
-          camera={{ position: [0, 0.62, 2.15], fov: 35 }}
-          style={{ background: 'transparent' }}
-        >
-          <ambientLight intensity={1.15} />
-          <directionalLight position={[1.5, 2.5, 2]} intensity={1.6} />
-          <directionalLight position={[-1.5, 1, 1]} intensity={0.45} />
-          <RunnerErrorBoundary>
-            <Suspense fallback={null}>
-              <RunnerModel onReady={() => setReady(true)} />
-            </Suspense>
-          </RunnerErrorBoundary>
-        </Canvas>
+        <RunnerErrorBoundary>
+          <Canvas
+            gl={{ alpha: true, antialias: true }}
+            dpr={[1, 1.5]}
+            camera={{ position: [0, 0.62, 2.15], fov: 35 }}
+            style={{ background: 'transparent' }}
+            onCreated={(state) => {
+              console.log('[HeaderRunner] WebGL canvas created');
+              window.__SA_RUNNER = 'canvas-created';
+            }}
+          >
+            <ambientLight intensity={1.15} />
+            <directionalLight position={[1.5, 2.5, 2]} intensity={1.6} />
+            <directionalLight position={[-1.5, 1, 1]} intensity={0.45} />
+            <RunnerErrorBoundary>
+              <Suspense fallback={null}>
+                <RunnerModel onReady={() => setReady(true)} />
+              </Suspense>
+            </RunnerErrorBoundary>
+          </Canvas>
+        </RunnerErrorBoundary>
       </div>
     </div>
   );
