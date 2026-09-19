@@ -19,22 +19,48 @@ function RunnerModel() {
   const fitted = useRef(false);
   const hasClip = names.length > 0;
 
-  // Normalise unknown FBX units: scale so the model stands ~1 unit tall with
-  // its feet at y=0, centred on x/z. That makes it ~26px tall in our camera.
+  // Normalise unknown FBX units. Two traps live here: (1) the file's own
+  // unit group scales the mesh ~100x in world space, so raw geometry bounds
+  // alone leave the camera buried inside the model (nothing rasterises);
+  // divide by the mesh's world scale too. (2) Never Box3.setFromObject on a
+  // skinned hierarchy — uninitialised bone matrices inflate it ~100x the
+  // other way. Bind pose is vertically centred, so Y stays 0.
   useEffect(() => {
     const node = group.current;
     if (!node || fitted.current) return;
     fitted.current = true;
-    const box = new THREE.Box3().setFromObject(fbx);
+    const geoBox = new THREE.Box3();
+    let worldScale = 1;
+    fbx.updateMatrixWorld(true);
+    fbx.traverse((o) => {
+      if (o.isMesh && o.geometry) {
+        o.geometry.computeBoundingBox();
+        geoBox.union(o.geometry.boundingBox);
+        worldScale = new THREE.Vector3().setFromMatrixScale(o.matrixWorld).x || 1;
+      }
+    });
+    if (geoBox.isEmpty()) return;
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
-    box.getSize(size);
-    box.getCenter(center);
-    if (size.y > 0) {
-      const s = 1 / size.y;
+    geoBox.getSize(size);
+    geoBox.getCenter(center);
+    if (size.y > 0 && worldScale > 0) {
+      const s = 1.25 / (size.y * worldScale);
       node.scale.setScalar(s);
-      node.position.set(-center.x * s, -box.min.y * s, -center.z * s);
+      node.position.set(-center.x * s, 0, -center.z * s);
     }
+    // Flat visible kit: the file's textures live at converter-absolute
+    // paths that 404, so every map would stay black. A 26px header sprite
+    // reads better untextured — drop maps, keep authored colours.
+    fbx.traverse((o) => {
+      if (!o.isMesh) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      mats.forEach((m) => {
+        if (!m) return;
+        m.map = null;
+        m.needsUpdate = true;
+      });
+    });
   }, [fbx]);
 
   // Play the run clip looped; mixer is driven in useFrame below.

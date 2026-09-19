@@ -785,3 +785,14 @@ Header runner: installed the `running.fbx` model small inside the top bar at Jac
 * Follow-up: tune run speed/scale if Jackson wants, and confirm on a phone viewport that the runner never collides with long player names.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Fixed the invisible header runner at Jackson's request ("don't see the model running"). Root-caused with Playwright against local dev + Node inspection of the FBX — two stacked bugs, both in framing/materials, loop was always fine.
+
+* **Bug 1 (fatal — nothing rasterised):** the file's `world` group scales the mesh ~100x, so raw-geometry normalisation left the camera buried *inside* the model (backfaces culled → 0 lit pixels; verified via canvas pixel probe). Fix: `HeaderRunner.js` now divides by the mesh's world scale too (`setFromMatrixScale`), landing the runner ~1 unit tall in view (bumped 1.25x for legibility, ~30px in the 36px track). Also replaced `Box3.setFromObject` (uninitialised skinned bone matrices inflate it ~100x the other way) with a raw-geometry union; bind pose is vertically centred so Y stays 0.
+* **Bug 2 (visual — black on dark green):** the FBX references converter-absolute texture paths (`/var/www/miconvertv2/...`, 404) so materials stayed unlit black. Fix: drop maps at load for a flat kit, keep authored colours (#cccccc grey reads on the dark header).
+* **Verified with my own eyes:** Playwright screenshots show the grey runner at two different track positions (traversal + 2.6 s run / 2 s gap loop confirmed alive via flyer transform reads); `npm run build` green (5/5). Console shows only the harmless texture 404 + a local-only DB ECONNREFUSED from device resume (no local Postgres — production unaffected). Scratch inspect scripts and dev log removed, dev server stopped.
+* Follow-up: first load takes a few seconds (6.3 MB model fetch + 439k-vert parse) — consider a tiny loading shimmer in the track if it feels empty; confirm on Vercel + phone viewport.
+
+---
