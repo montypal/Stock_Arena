@@ -11,8 +11,17 @@ const MODEL_URL = '/models/running.fbx';
 const DEBUG = false;
 const RUN_W = DEBUG ? 320 : 56;
 const RUN_H = DEBUG ? 180 : 36;
-// Target model height in camera units after auto-fit.
-const FIT_H = 1.0;
+// Target model height in camera units after auto-fit (bull ~17% larger).
+const FIT_H = 1.175;
+// The converter baked an absolute server path into the FBX texture slot.
+// Remap it to a local file so the real texture applies the moment it is
+// exported next to the model at web/public/models/textures/packed/Image_0.
+const LOCAL_TEXTURE = '/models/textures/packed/Image_0';
+if (typeof window !== 'undefined') {
+  THREE.DefaultLoadingManager.setURLModifier((url) =>
+    url.includes('Image_0') ? LOCAL_TEXTURE : url
+  );
+}
 
 // Warm the fetch so the first traversal already has the model.
 useFBX.preload(MODEL_URL);
@@ -106,8 +115,10 @@ function RunnerModel() {
       );
       return;
     }
-    console.log(`[HeaderRunner] playing "${clipName}" looped.`);
-    action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
+    console.log(`[HeaderRunner] playing "${clipName}" looped at 0.75x (timeScale, clip untouched).`);
+    action.reset().setLoop(THREE.LoopRepeat, Infinity);
+    action.timeScale = 0.75;
+    action.play();
     return () => {
       action.stop();
     };
@@ -148,15 +159,15 @@ function RunnerModel() {
     }
   });
 
-  // Flat visible kit: the file's textures live at converter-absolute paths
-  // that 404, so every map would stay black. Drop maps, keep authored colours.
+  // Texture policy: preserve the FBX's own materials — never null the map.
+  // The loader resolves the file's texture path relative to /models/; a
+  // missing file only logs a 404 while the authored colour still renders.
   useEffect(() => {
     fbx.traverse((o) => {
       if (!o.isMesh) return;
       const mats = Array.isArray(o.material) ? o.material : [o.material];
       mats.forEach((m) => {
         if (!m) return;
-        m.map = null;
         m.needsUpdate = true;
       });
     });

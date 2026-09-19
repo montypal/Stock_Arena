@@ -808,3 +808,15 @@ Rebuilt `HeaderRunner.js` for the Mixamo bull (Jackson confirmed: bull + Mixamo 
 * Follow-up: same as before — 6.3 MB first-load cost; confirm on Vercel + phone.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Runner polish at Jackson's request: bull ~17% larger, 0.75x gait, map preserved, same model/animation, traversal untouched.
+
+* **Size:** `FIT_H` 1.0 → 1.175 — auto-fit keeps the whole bull centered/visible in the 56×36 slot (verified in screenshot).
+* **Speed:** `action.timeScale = 0.75` on the looped `mixamo.com` clip (logged); clip bytes untouched; header traversal (2.6 s run / 2 s gap) unchanged.
+* **Materials:** removed all `material.map = null` code — the FBX map slot is preserved verbatim. Forensics: the slot references converter-absolute `/var/www/miconvertv2/.../Image_0` (Video node, no extension, no embedded pixels — binary scan found no PNG/JPEG; sibling Copilot3D FBX and Downloads hold no UV texture either). A `DefaultLoadingManager.setURLModifier` remaps that path to local `web/public/models/textures/packed/Image_0` (proven firing via remap log + network tab). Tested the only local candidate (`BCO.*.png` — a T-pose preview render, not a UV map) — wrong pixels for the file's UVs, so it was NOT shipped; the slot stays clean for the real export.
+* **Verified:** `npm run build` green (5/5); production-mode screenshot shows the bull visible mid-track at the new size, looping. No `map = null` anywhere in the component.
+* Follow-up: to get the painted (brown/green) bull, export the texture with the FBX from Copilot3D/Mixamo and drop it at `web/public/models/textures/packed/Image_0` — no code change needed, the remap picks it up automatically. Confirm on Vercel.
+
+---
