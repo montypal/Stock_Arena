@@ -530,6 +530,20 @@ body.signed-in .app {
   background: transparent;
 }
 
+/* Static poster: same bull pixels, shown inside the travelling flyer until
+   the 3D model reports ready (and forever if WebGL fails). */
+.runner-fly .runner-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  border-radius: inherit;
+  pointer-events: none;
+  user-select: none;
+}
+
 .coin-chip {
   display: inline-flex;
   align-items: center;

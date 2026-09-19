@@ -831,3 +831,15 @@ Runner texture breakthrough at Jackson's request ("can't see it running… with 
 * Follow-up: confirm on Vercel (public/ ships the texture automatically); if Jackson exports a higher-res UV map later, overwrite the same path.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Runner guaranteed-visible pass at Jackson's request ("still don't see it" — full breakdown: code, then model, then fix, then proof). Pulled already up to date; no destructive ops; no secrets.
+
+* **Code around the model — audited, healthy:** `layout.js` renders `AppHeader` on every route; `header.js` mounts the runner between brand and coin chip; `.runner-track` flexes (814 px on desktop, 48 px min on phones); loop proven alive via flyer transform reads (2.6 s run / 2 s gap). Removed one leftover duplicated clip check. Finding: most "empty" screenshots were just the 2 s hidden gap + LLM-roundtrip timing — a burst-capture (6 shots) caught the bull mid-track twice.
+* **Model — both Downloads originals checked:** `Copilot3D-*.fbx` (unrigged, same mesh/material, zero clips, no embedded texture) vs `Running.fbx` (rigged, 1 mesh, 439k verts, `mixamo.com` 0.70 s / 29 tracks, `mixamorig*` bones). No embedded pixels in either — the only texture source is the `BCO.*.png` already shipped.
+* **Fix — poster fallback:** new `ready` state in `HeaderRunner.js`; a static `<img>` of the same bull pixels (`/models/textures/packed/Image_0`, zero extra bytes) rides inside the travelling flyer until the 3D model reports fitted, then unmounts. Covers every remaining blind spot at once: 6.3 MB load window, WebGL-less devices, and any future loader hiccup (error boundary → poster stays forever). Poster styled in `globals.css` (cover crop, rounded, non-interactive).
+* **Verified:** production build + start; flyer reads + burst screenshots prove the colored 3D bull mid-track; poster phase confirmed present before ready. `npm run build` green (5/5).
+* Follow-up: Jackson — hard-refresh the live app (cached pages predate the texture commit `332844a`); confirm on Vercel + phone.
+
+---

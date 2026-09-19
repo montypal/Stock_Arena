@@ -1,6 +1,6 @@
 'use client';
 
-import { Component, Suspense, useEffect, useRef } from 'react';
+import { Component, Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useAnimations, useFBX } from '@react-three/drei';
 import * as THREE from 'three';
@@ -48,7 +48,7 @@ class RunnerErrorBoundary extends Component {
   }
 }
 
-function RunnerModel() {
+function RunnerModel({ onReady }) {
   const group = useRef(null);
   const fbx = useFBX(MODEL_URL);
   // Mixamo clips target `mixamorig*` bone names; the fbx subtree (with its
@@ -103,10 +103,6 @@ function RunnerModel() {
       }
     });
     console.log('[HeaderRunner] root motion pinned (Hips X/Z locked, Y bob kept).');
-    if (names.length === 0) {
-      console.error('[HeaderRunner] ERROR: no playable clip found in fbx.animations.');
-      return;
-    }
     const clipName = names[0];
     const action = actions[clipName];
     if (!action) {
@@ -156,6 +152,7 @@ function RunnerModel() {
       group.current.scale.setScalar(s);
       group.current.position.set(-center.x * s, -center.y * s, -center.z * s);
       console.log(`[HeaderRunner] auto-fit scale ${Number(s.toFixed(5))}; bull centered at origin.`);
+      onReady?.();
     }
   });
 
@@ -190,6 +187,10 @@ function RunnerModel() {
 export default function HeaderRunner() {
   const trackRef = useRef(null);
   const flyRef = useRef(null);
+  // True once the 3D bull is fitted and rendering. Until then — and forever
+  // if WebGL/three fails — a static poster (same bull pixels) travels the
+  // loop instead, so the header is never empty.
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -261,6 +262,15 @@ export default function HeaderRunner() {
         className="runner-fly"
         style={DEBUG ? { width: 320, height: 180 } : undefined}
       >
+        {!ready ? (
+          <img
+            src="/models/textures/packed/Image_0"
+            className="runner-poster"
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+          />
+        ) : null}
         <Canvas
           gl={{ alpha: true, antialias: true }}
           dpr={[1, 1.5]}
@@ -272,7 +282,7 @@ export default function HeaderRunner() {
           <directionalLight position={[-1.5, 1, 1]} intensity={0.45} />
           <RunnerErrorBoundary>
             <Suspense fallback={null}>
-              <RunnerModel />
+              <RunnerModel onReady={() => setReady(true)} />
             </Suspense>
           </RunnerErrorBoundary>
         </Canvas>
