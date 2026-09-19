@@ -843,3 +843,13 @@ Runner guaranteed-visible pass at Jackson's request ("still don't see it" — fu
 * Follow-up: Jackson — hard-refresh the live app (cached pages predate the texture commit `332844a`); confirm on Vercel + phone.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Runner third layer at Jackson's request — his screenshot shows an EMPTY track (no 3D, no poster). Diagnosis: the `next/dynamic` loading fallback was an empty track div, so whenever the three.js chunk is slow or fails, the header is a blank gap — matching his screenshot exactly.
+
+* **Fix:** the dynamic-import fallback in `header.js` is now a pure-CSS runner (`.runner-fly-static` + `runner-across` keyframes in `globals.css`, same 2.6 s traverse + 2 s pause loop, reduced-motion parks it). Zero JS, zero WebGL, zero model download — it moves from first paint and unmounts when the real component loads. Layers are now: CSS poster (instant) → JS poster (until fitted) → 3D bull (looping), each independent.
+* **Verified:** production build + start; burst capture shows the CSS fallback handing off to the JS loop and the colored 3D bull mid-track. `npm run build` green (5/5). Scrubbed server/screenshot scratch.
+* Follow-up: Jackson — confirm Vercel deployed this commit; hard-refresh (Cmd/Ctrl+Shift+R); if the track is STILL empty, send the deployment commit hash + browser/device + any F12 console errors, because local production proves all three layers render.
+
+---

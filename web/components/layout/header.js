@@ -6,9 +6,23 @@ import dynamic from 'next/dynamic';
 import Icon from './icons';
 
 // Tiny 3D runner, client-only so three.js never touches SSR/prerender.
+// While its (large) JS chunk loads — or forever if the chunk fails — a pure
+// CSS poster runs the same path, so the header is never an empty gap.
 const HeaderRunner = dynamic(() => import('./HeaderRunner'), {
   ssr: false,
-  loading: () => <div className="runner-track" aria-hidden="true" />,
+  loading: () => (
+    <div className="runner-track" aria-hidden="true">
+      <div className="runner-fly-static">
+        <img
+          src="/models/textures/packed/Image_0"
+          className="runner-poster"
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+        />
+      </div>
+    </div>
+  ),
 });
 
 // Top bar on every screen: logo + wordmark, and on the right either the

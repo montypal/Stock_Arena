@@ -544,6 +544,56 @@ body.signed-in .app {
   user-select: none;
 }
 
+/* Chunk-load fallback: the dynamic HeaderRunner import carries three.js, so
+   on slow networks it arrives late (or never). This pure-CSS flyer runs the
+   same 2.6 s traverse + 2 s pause loop with zero JS, then unmounts when the
+   real component loads. */
+.runner-fly-static {
+  position: absolute;
+  top: 50%;
+  left: -60px;
+  width: 56px;
+  height: 36px;
+  margin-top: -18px;
+  animation: runner-across 4.6s linear infinite;
+  pointer-events: none;
+}
+
+.runner-fly-static .runner-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  border-radius: 12px;
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes runner-across {
+  0% {
+    left: -60px;
+    opacity: 1;
+  }
+  56% {
+    left: 100%;
+    opacity: 1;
+  }
+  57%,
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .runner-fly-static {
+    animation: none;
+    left: calc(50% - 28px);
+  }
+}
+
 .coin-chip {
   display: inline-flex;
   align-items: center;
