@@ -278,7 +278,7 @@ Shows total value, starting balance, total profit and loss, stocks owned, amount
 
 ## Trading
 
-Deliberately limited. Free choice of stocks on Monday, then one final trade on Friday, then locked. The Friday trade is the week's major strategic moment: "stay with what got me here, or make one last move?"
+Buy as much as you want as long as you have the money — no per-stock cap and no share-count cap beyond affordability. Enter any stock on Monday, trade freely while the week is open, then hold for settlement. Buy and sell by share count (whole shares) with a -/+ stepper; pending orders fill at the next observed real price after you place them.
 
 ## Achievements
 
@@ -727,9 +727,19 @@ Rebuilt the buying flow at Jackson's request: real data everywhere, sortable tra
 
 * **Real data:** prices were already live Finnhub `/quote` via the worker (web never calls the vendor). Descriptions are new: worker fetches Finnhub `/stock/profile2` and caches per symbol in new nullable `stocks.description`/`industry` columns (`schema.sql`, ADD COLUMN only); `poller.py` backfills missing-only each cycle (steady state = zero extra calls, inside 60/min). Detail page renders the cached description, neutral fallback if missing — nothing invented.
 * **Trade list:** default sort is now trending (biggest day-change % first); new Sort control (Trending / A–Z / Z–A / Price ↑ / Price ↓) via `?sort=`, server-side whitelist in `stocks()`; `?q=` search kept. New client `SortSelect.js` (server components can't carry onChange).
-* **Share stepper:** new client `ShareStepper.js` (`- N +`, default 0, whole shares, max = affordable/cap room or held) bound to a `shares` form field; `DollarField.js` deleted. `placeOrder` validates integer shares ≥1, cost ≤ cash and 20% cap; stores shares + estimated cost. Worker `_fill_one` fills N shares at the next observed price (actual cost deducted, rejects if cash short at fill; old dollar orders still fill). Sell stepper mirrors buy + Sell-all kept.
+* **Share stepper:** new client `ShareStepper.js` (`- N +`, default 0, whole shares, max = affordable/cap room or held) bound to a `shares` form field; `DollarField.js` deleted. `placeOrder` validates integer shares ≥1, cost ≤ cash and 20% cap (at that time); stores shares + estimated cost. Worker `_fill_one` fills N shares at the next observed price (actual cost deducted, rejects if cash short at fill; old dollar orders still fill). Sell stepper mirrors buy + Sell-all kept.
 * **Review fixes (agent gaps):** description/industry were never selected by `stock()` (page would have shown nothing) — fixed; `symbol-desc` sort fell through to trending — fixed; stepper/select interactivity can't live in server components — extracted to client components; whole-shares guard added; buy-button disable now share-based; removed a noop line in worker fill.
 * **Verified:** `npm run build` green (all routes incl. `/trade`, `/trade/[symbol]`); worker `py_compile` clean + 6/6 unit tests pass; forward pricing, 20% cap, settlement, payouts, nav, glass untouched.
 * Follow-up: descriptions populate when the worker runs its next cycle (Railway); confirm Vercel build + spot-check a fill.
+
+---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Removed the 20% per-stock cap + the ~15-share effective limit at Jackson's request (`git pull` already up to date). No destructive ops; no secrets.
+
+* **Rule change:** you can now buy as much as you want as long as you have the money — no per-stock cap and no share-count cap beyond affordability. `POSITION_CAP` stays exported as 1 (no cap) for import compatibility but is no longer enforced; `web/lib/trading/game.js` `tradeLimits()` now caps only on `available = cash - pendingBuys` (`maxShares = floor(available / price)`, `maxBuy = available`), and `placeOrder` no longer rejects on `capRoom`. UI that taught the cap removed: `TierCards.js` pill, `HoldingsCard.js` empty-state "plan on at least 5" text, `daily` placeholder reminder, and the trade-detail hint (now "buy as many as you can afford").
+* **Game plan:** `## Trading` in Regular Gameplay Plan rewritten to the new open-trading rule and share-stepper buying.
+* **Verified:** `npm run build` green (all routes); worker tests unchanged (payout/ranking, not trading). Follow-up: design/wording around "free trade" to be tuned if needed.
 
 ---

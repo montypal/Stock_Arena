@@ -1,7 +1,7 @@
 import Icon from '../layout/icons';
 import SubmitButton from '../layout/SubmitButton';
 import { join } from '../../lib/actions';
-import { POSITION_CAP, ROOM_CAPACITY, TIERS, WIN_COINS } from '../../lib/trading/game';
+import { ROOM_CAPACITY, TIERS, WIN_COINS } from '../../lib/trading/game';
 import { money, weekLabel, weekRange } from '../../lib/utils/format';
 
 // The three weekly leagues a player can join, one glass card per tier.
@@ -16,7 +16,6 @@ import { money, weekLabel, weekRange } from '../../lib/utils/format';
 // spinner and "Joining…" while that runs, and can't be pressed twice.
 export default function TierCards({ week, live, level = 2 }) {
   const Title = level === 3 ? 'h3' : 'h2';
-  const cap = Math.round(POSITION_CAP * 100);
   const range = weekRange(week);
 
   return (
@@ -56,7 +55,6 @@ export default function TierCards({ week, live, level = 2 }) {
             <div className="panel battle-how">
               <div className="battle-how-head">
                 <p className="eyebrow">How it works</p>
-                <span className="pill battle-cap">{cap}% cap per stock</span>
               </div>
               <ul className="battle-how-list">
                 <li>

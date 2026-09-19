@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '../../../../lib/db/auth';
-import { POSITION_CAP, currentEntry, marketOpen, orders, stock, tradeLimits } from '../../../../lib/trading/game';
+import { currentEntry, marketOpen, orders, stock, tradeLimits } from '../../../../lib/trading/game';
 import { money, pct, shareCount, timeET } from '../../../../lib/utils/format';
 import { cancel, trade } from '../../../../lib/actions';
 import AutoRefresh from '../../../../components/layout/refresh';
@@ -28,8 +28,6 @@ export default async function StockPage({ params, searchParams }) {
   const canTrade = entry?.trading_open && s.price != null;
   const holding = Boolean(limits && limits.shares > 0);
   const canSell = canTrade && holding;
-  const maxSell = holding ? Math.floor(limits.positionValue * 100) / 100 : 0;
-  const capPct = Math.round(POSITION_CAP * 100);
   const back = `/trade/${symbol}`;
 
   return (
@@ -121,11 +119,7 @@ export default async function StockPage({ params, searchParams }) {
               min={0}
               max={limits.maxShares}
               defaultValue={0}
-              hint={`Up to ${limits.maxShares} shares. ${
-                limits.capRoom < limits.available
-                  ? `No stock can be more than ${capPct}% of your portfolio.`
-                  : "That's your available cash."
-              }`}
+              hint={`Up to ${limits.maxShares} shares — buy as many as you can afford.`}
             />
                 <SubmitButton
                   className="btn primary block"

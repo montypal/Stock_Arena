@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { POSITION_CAP } from '../../lib/trading/game';
 import { money, shareCount, signedMoney, tone } from '../../lib/utils/format';
 
 // The stocks in the player's current league, each linking to its trade
@@ -9,8 +8,6 @@ import { money, shareCount, signedMoney, tone } from '../../lib/utils/format';
 // tradingOpen - entry.trading_open
 export default function HoldingsCard({ rows, tradingOpen }) {
   const empty = rows.length === 0;
-  const capPct = Math.round(POSITION_CAP * 100);
-  const minStocks = Math.ceil(1 / POSITION_CAP);
 
   return (
     <section className="card" aria-labelledby="home-holdings-title">
@@ -26,9 +23,7 @@ export default function HoldingsCard({ rows, tradingOpen }) {
       {empty ? (
         <>
           <p className="empty">
-            {tradingOpen
-              ? `Nothing yet. No single stock can be more than ${capPct}% of your portfolio, so plan on at least ${minStocks}.`
-              : 'No stocks held.'}
+            {tradingOpen ? 'Nothing yet. Pick any stocks you like — buy as much as you can afford.' : 'No stocks held.'}
           </p>
           {tradingOpen ? (
             <Link href="/trade" className="btn primary block">

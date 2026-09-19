@@ -18,10 +18,10 @@ const NEWS = [
   },
   {
     tag: 'Strategy',
-    title: 'Reminder: no single stock can top 20% of your portfolio',
+    title: 'Buy as much as you want — as long as you can afford it',
     source: 'League Desk',
     time: 'Today · 7:00 AM ET',
-    blurb: 'Plan on at least five positions if you want all of your cash invested.',
+    blurb: 'No per-stock cap. If you have the cash, you can put it where you want.',
   },
   {
     tag: 'Schedule',

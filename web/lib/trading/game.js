@@ -14,7 +14,7 @@ export function tierInfo(tier) {
   return TIERS.find((t) => t.tier === Number(tier)) ?? null;
 }
 
-export const POSITION_CAP = 0.2;
+export const POSITION_CAP = 1;
 export const ROOM_CAPACITY = 30;
 
 // Errors a player can act on. Anything else is a bug and should surface.
@@ -283,14 +283,13 @@ export async function stock(symbol) {
   );
 }
 
-// What a player can do with one stock right now.
+// What a player can do with one stock right now. Affordability only — buy as
+// much as you can afford as long as you have the cash (no per-stock cap).
 export async function tradeLimits(entry, symbol) {
   const row = await one(
     `SELECT
        (SELECT COALESCE(SUM(amount), 0) FROM orders
          WHERE entry_id = $1 AND status = 'pending' AND side = 'buy') AS pending_buys,
-       (SELECT COALESCE(SUM(amount), 0) FROM orders
-         WHERE entry_id = $1 AND status = 'pending' AND side = 'buy' AND symbol = $2) AS pending_buys_here,
        (SELECT COALESCE(SUM(COALESCE(p.shares * lp.price, p.cost_basis)), 0)
           FROM positions p LEFT JOIN latest_price lp ON lp.symbol = p.symbol
           WHERE p.entry_id = $1) AS invested,
@@ -309,15 +308,12 @@ export async function tradeLimits(entry, symbol) {
   );
   const price = priceRow.length > 0 ? Number(priceRow[0].price) : 0;
   const available = Math.max(0, cash - Number(row.pending_buys));
-  const capRoom = Math.max(
-    0,
-    POSITION_CAP * portfolio - Number(row.position_value ?? 0) - Number(row.pending_buys_here)
-  );
-  const maxShares = Math.floor(Math.min(available, capRoom) / price);
+  const maxBuy = Math.floor(available * 100) / 100;
+  const maxShares = price > 0 ? Math.floor(available / price) : 0;
   return {
     available,
-    capRoom,
-    maxBuy: Math.floor(Math.min(available, capRoom) * 100) / 100,
+    capRoom: available,
+    maxBuy,
     maxShares,
     shares: Number(row.shares ?? 0),
     positionValue: Number(row.position_value ?? 0),
@@ -364,11 +360,6 @@ export async function placeOrder(userId, { symbol, side, shares, amount, sellAll
       const estimatedAmount = Math.round(shares * quote.price * 100) / 100;
       if (estimatedAmount > limits.available + 0.005) {
         throw new GameError(`You have ${money(limits.available)} available to spend.`);
-      }
-      if (estimatedAmount > limits.capRoom + 0.005) {
-        throw new GameError(
-          `No stock can be more than 20% of your portfolio. You can add up to ${money(limits.capRoom)} more of ${symbol}.`
-        );
       }
       await c.query(
         `INSERT INTO orders (entry_id, symbol, side, amount, shares) VALUES ($1, $2, 'buy', $3, $4)`,
