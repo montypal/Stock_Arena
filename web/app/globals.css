@@ -503,6 +503,33 @@ body.signed-in .app {
   color: var(--green);
 }
 
+/* 3D header runner: flex track between the wordmark and the coin chip. Fixed
+   36px height so the header never shifts; overflow hides the runner off-edge. */
+.runner-track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 48px;
+  height: 36px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.runner-fly {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 56px;
+  height: 36px;
+  transform: translate3d(-80px, -50%, 0);
+  opacity: 0;
+  will-change: transform;
+}
+
+.runner-fly canvas {
+  display: block;
+  background: transparent;
+}
+
 .coin-chip {
   display: inline-flex;
   align-items: center;

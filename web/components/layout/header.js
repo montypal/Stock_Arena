@@ -2,7 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import Icon from './icons';
+
+// Tiny 3D runner, client-only so three.js never touches SSR/prerender.
+const HeaderRunner = dynamic(() => import('./HeaderRunner'), {
+  ssr: false,
+  loading: () => <div className="runner-track" aria-hidden="true" />,
+});
 
 // Top bar on every screen: logo + wordmark, and on the right either the
 // player's coin balance (signed in) or a Drop in button that jumps to the
@@ -22,6 +29,8 @@ export default function AppHeader({ coins }) {
             STOCK<span>ARENA</span>
           </span>
         </Link>
+
+        <HeaderRunner />
 
         {signedIn ? (
           <Link href="/progress" className="coin-chip" aria-label={`${Number(coins).toLocaleString()} coins`}>
