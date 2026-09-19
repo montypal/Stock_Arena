@@ -820,3 +820,14 @@ Runner polish at Jackson's request: bull ~17% larger, 0.75x gait, map preserved,
 * Follow-up: to get the painted (brown/green) bull, export the texture with the FBX from Copilot3D/Mixamo and drop it at `web/public/models/textures/packed/Image_0` — no code change needed, the remap picks it up automatically. Confirm on Vercel.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Runner texture breakthrough at Jackson's request ("can't see it running… with color and texture"). An explore agent independently corroborated the diagnosis (map kept + missing file = black bull; error boundary never fires on texture 404 since useFBX resolves at FBX parse).
+
+* **The `BCO.*.png` IS the texture after all:** the mesh was generated from that exact image (image-to-3D), so its UVs sample it meaningfully — not garbage. Shipped it as `web/public/models/textures/packed/Image_0` (731 KB, copied from Downloads, exact name the remap targets). Production test: FBX 200 → texture 200 (clean URL, no suffix — the `:0` in dev logs was Chromium's `url:line` error formatting, not part of the filename), and the header screenshot shows a BROWN/GREEN bull mid-track instead of black/grey.
+* **Kept:** same `running.fbx`, same `mixamo.com` clip at 0.75x, 17% larger fit, map slot preserved (no nulling), traversal untouched. No code changes needed for the texture — the committed remap picked it up automatically.
+* **Verified:** production `npm run build` + `npm run start` locally, network tab confirms both files 200, screenshot confirms colored running bull. Dev-server lesson relearned: never delete `.next` under a running server (causes `./331.js` rot); restart cleanly instead.
+* Follow-up: confirm on Vercel (public/ ships the texture automatically); if Jackson exports a higher-res UV map later, overwrite the same path.
+
+---
