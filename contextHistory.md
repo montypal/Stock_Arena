@@ -796,3 +796,15 @@ Fixed the invisible header runner at Jackson's request ("don't see the model run
 * Follow-up: first load takes a few seconds (6.3 MB model fetch + 439k-vert parse) — consider a tiny loading shimmer in the track if it feels empty; confirm on Vercel + phone viewport.
 
 ---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+Rebuilt `HeaderRunner.js` for the Mixamo bull (Jackson confirmed: bull + Mixamo run clip, model must not be replaced). New root cause found via in-browser diagnostics — the Mixamo clip carries **root motion**, which outranks the earlier framing theories.
+
+* **Inspection (logged, not assumed):** `fbx.animations` = 1 clip, `mixamo.com`, 0.70 s, 29 tracks, bones `mixamorig*` (matches the hierarchy, so `useAnimations` resolves tracks against the fbx descendants — clip never assumed on the outer group). Pre-fix posed bounds measured **center x=+94** — the Hips position track sprints the rig forward, so the bull shot off-frame in <1 s and snapped back every 0.7 s loop: effectively invisible, which is exactly what Jackson saw.
+* **Fix:** pin `mixamorigHips.position` X/Z to first-keyframe values before playing (Y bob kept, legs/arms untouched); post-pin bounds recentered to x≈7 (stride residual only). Clip plays looped via `AnimationMixer`, updated every frame in `useFrame`. Auto-fit now measures the posed box at frame 12 (bones initialised by then) and scales/centers once; `console.log` reports meshes, clip names/durations/tracks, posed size/center, and final scale.
+* **No silent failures:** `console.error` if zero clips, if the clip's action is missing, if bounds are empty/degenerate, and a `RunnerErrorBoundary` reports load/parse failures for `/models/running.fbx`. No bob fallback anymore — the real clip plays or an error says why.
+* **Verified:** temporarily enlarged to a 320×180 canvas — screenshot shows the white-grey bull clearly mid-track; then `DEBUG=false` back to the 56×36 slot and re-verified with a production-size screenshot (small bull visible just right of STOCK ARENA). `npm run build` green (5/5). Dev server stopped, scratch files removed.
+* Follow-up: same as before — 6.3 MB first-load cost; confirm on Vercel + phone.
+
+---
