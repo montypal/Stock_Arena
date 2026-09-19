@@ -100,9 +100,8 @@ CREATE INDEX IF NOT EXISTS sessions_user ON sessions (user_id);
 
 -- ================================================================ leagues
 
--- One league per tier per week. Weeks start Monday 00:00 America/New_York.
--- Trading closes at Friday's market close; the league ends (and settles) at
--- the following Monday 00:00.
+-- One league per tier per week. Weeks start Monday 06:00 America/New_York
+-- and end Sunday 19:00; you can join and trade anytime that window is open.
 CREATE TABLE IF NOT EXISTS leagues (
     id                BIGSERIAL PRIMARY KEY,
     tier              INT  NOT NULL CHECK (tier IN (1000, 10000, 100000)),

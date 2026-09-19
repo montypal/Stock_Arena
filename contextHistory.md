@@ -252,19 +252,15 @@ At the end of Sunday, the player whose portfolio has made the most money wins th
 
 ## Weekly Game Loop
 
-**Monday — Leagues Open.** Three leagues open every week — **1K ($1,000)**, **10K ($10,000)**, **100K ($100,000)** — and a player may join one, two, or all three; each is a separate competition with its own portfolio. In the 1K league you are given $1,000 (same logic for 10K/100K with more money). When you click **Join** you enter that league's interface where you can see how much money you have, how much you've spent, and what stocks you've bought. You buy stocks at the real stock market price and during the week the stocks' value increases and decreases with the real market — a simulation but with real data. The first achievements become available immediately.
+**Monday 6:00 AM ET — Leagues Open.** Three leagues open every week — **1K ($1,000)**, **10K ($10,000)**, **100K ($100,000)** — and a player may join one, two, or all three; each is a separate competition with its own portfolio. In the 1K league you are given $1,000 (same logic for 10K/100K with more money). When you click **Join** you enter that league's interface where you can see how much money you have, how much you've spent, and what stocks you've bought. You buy stocks at the real stock market price and during the week the stocks' value increases and decreases with the real market — a simulation but with real data. You can join and add stocks **anytime** while the league is open; joining later just means less time for your stocks to grow. The first achievements become available immediately.
 
-**Tuesday–Thursday — Watch Your Portfolio.** Players monitor portfolio value, profit and loss, individual stock performance, league position, and distance from the players above and below. Achievements unlock through these days based on performance, paying cash into the available balance.
+**Monday–Sunday — Watch Your Portfolio.** Players monitor portfolio value, profit and loss, individual stock performance, league position, and distance from the players above and below. Achievements unlock through these days based on performance, paying cash into the available balance. Buy and sell remains open all week.
 
-**Friday — Final Trade Opportunity.** One last chance to sell and rebuy. Achievement money earned during the week is available to spend. After this trade the portfolio is locked.
-
-**Saturday–Sunday — Final Stretch.** No trading. Achievements can still be earned, since they depend on performance and position rather than trading.
-
-**Sunday — League Ends.** Final portfolio value is calculated including all achievement money. Most profit wins in each league you joined; your finishing place in each league pays **coins** (game currency) — and **currency and the money used to buy stocks are NOT the same**: coins are for the game, money is only for that league's stock buying and resets each week.
+**Sunday 7:00 PM ET — Leagues Close & Settle.** No new joins or trades after close. Final portfolio value is calculated including all achievement money. Most profit wins in each league you joined; your finishing place in each league pays **coins** (game currency) — and **currency and the money used to buy stocks are NOT the same**: coins are for the game, money is only for that league's stock buying and resets each week.
 
 ## League Structure
 
-Every league has a fixed starting balance, a Monday start, a Sunday end, a player group, a leaderboard, real prices, fake money, one Friday trade, a shared achievement set, and a winner.
+Every league has a fixed starting balance (Monday 6:00 AM start, Sunday 7:00 PM end), a player group, a leaderboard, real prices, fake money, shared achievements, and a winner. You can join and trade anytime that window is open — later just means less time to grow.
 
 ## Leaderboard
 
@@ -278,7 +274,7 @@ Shows total value, starting balance, total profit and loss, stocks owned, amount
 
 ## Trading
 
-You can buy and sell whenever the league is open (Monday 00:00 ET until settlement the next Monday) — no Friday lock. Buy as much as you want as long as you have the money — no per-stock cap and no share-count cap beyond affordability. Enter any stock while open, trade by share count (whole shares) with a -/+ stepper; pending orders fill at the next observed real price after you place them. There is exactly one 1K, one 10K, and one 100K league per week; a player may join each at most once (up to 3 entries/week, never twice the same tier).
+You can buy and sell whenever the league is open (Monday 6:00 AM ET until Sunday 7:00 PM ET) — no Friday lock, no blackout. Buy as much as you want as long as you have the money — no per-stock cap and no share-count cap beyond affordability. Enter any stock while open, trade by share count (whole shares) with a -/+ stepper; pending orders fill at the next observed real price after you place them. You can join and add stocks anytime during the open window — joining later just means less time for your stocks to grow. There is exactly one 1K, one 10K, and one 100K league per week; a player may join each at most once (up to 3 entries/week, never twice the same tier).
 
 ## Achievements
 
@@ -751,6 +747,17 @@ Added live cost + affordability gray-out to the buy widget at Jackson's request.
 * **Buy widget (`web/components/trade/BuySharesForm.js`, new client component, used in `/trade/[symbol]`):** the same widget as the stepper + order button now shows the live total (`Total ≈ $X for N shares`, updating per tap; button itself reads `Buy N for ≈ $X`). The **+** button grays out the moment another share is unaffordable, and the **buy button** is disabled until the count is ≥1 and affordable — no more tappable-but-doomed orders. Sell stepper unchanged (already capped at held shares).
 * **Verified:** `npm run build` green (all routes incl. `/trade/[symbol]`).
 * Follow-up: Vercel build check.
+
+---
+
+Jackson OpenCode evening 9/17/26 PDT
+
+League window is now Mon 6:00 AM ET → Sun 7:00 PM ET at Jackson's request (pulled already up to date; no destructive ops; no secrets). You can join and add stocks anytime the window is open — later just means less time to grow.
+
+* **Timing:** `JOINABLE_WEEK` now resolves to this Monday if `now() < Sunday 19:00 ET` else next Monday; `leagues` rows use `starts_at = Monday 06:00 ET` and `ends_at = trading_closes_at = Sunday 19:00 ET` (settlement on `ends_at`). `ENTRY_SELECT` `trading_open` now `status='open' AND now()>=starts_at AND now()<ends_at` and `placeOrder` mirrors that window so buying/selling stays open all week. `worker/schema.sql` comment updated.
+* **Docs:** `README` intro + `How a league week works` and `contextHistory` `Weekly Game Loop` / `League Structure` / `Trading` rewritten to Mon 6am–Sun 7pm, always-open trading, and "anytime but less time to grow."
+* **Verified:** `npm run build` green (5/5); worker `py_compile` clean + 6/6 tests pass.
+* Follow-up: confirm Railway's next league row uses the new window.
 
 ---
 

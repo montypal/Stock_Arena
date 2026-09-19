@@ -24,10 +24,10 @@ export class GameError extends Error {}
 
 const ET_MONDAY = `date_trunc('week', now() AT TIME ZONE 'America/New_York')::date`;
 
-// The week a player joining right now lands in: this week until Friday's
-// close, then next week.
+// The week a player joining right now lands in: Monday 06:00 ET until
+// Sunday 19:00 ET is this week, otherwise next week.
 const JOINABLE_WEEK = `(CASE
-  WHEN now() < ((${ET_MONDAY} + 4)::timestamp + time '16:00') AT TIME ZONE 'America/New_York'
+  WHEN now() < ((${ET_MONDAY} + 6)::timestamp + time '19:00') AT TIME ZONE 'America/New_York'
   THEN ${ET_MONDAY}
   ELSE ${ET_MONDAY} + 7
 END)`;
@@ -61,7 +61,7 @@ const ENTRY_SELECT = `
          e.starting_balance, e.cash, e.joined_at,
          e.final_value, e.final_rank, e.coins_awarded,
          l.tier, l.starts_at, l.trading_closes_at, l.ends_at, l.status AS league_status,
-         (l.status = 'open' AND now() < l.ends_at) AS trading_open,
+         (l.status = 'open' AND now() >= l.starts_at AND now() < l.ends_at) AS trading_open,
          (now() < l.starts_at) AS not_started,
          (SELECT count(*) FROM rooms r2
            WHERE r2.league_id = e.league_id AND r2.id <= e.room_id) AS room_number,
@@ -156,9 +156,9 @@ export async function joinLeague(userId, tier) {
         await c.query(
           `INSERT INTO leagues (tier, week_start, starts_at, trading_closes_at, ends_at)
            VALUES ($1, $2::date,
-                   ($2::date)::timestamp AT TIME ZONE 'America/New_York',
-                   (($2::date + 4)::timestamp + time '16:00') AT TIME ZONE 'America/New_York',
-                   ($2::date + 7)::timestamp AT TIME ZONE 'America/New_York')
+                   ($2::date)::timestamp + time '06:00' AT TIME ZONE 'America/New_York',
+                   (($2::date + 6)::timestamp + time '19:00') AT TIME ZONE 'America/New_York',
+                   (($2::date + 6)::timestamp + time '19:00') AT TIME ZONE 'America/New_York')
            ON CONFLICT (tier, week_start) DO UPDATE SET tier = EXCLUDED.tier
            RETURNING id`,
           [tier, ws]
@@ -343,7 +343,7 @@ export async function tradeLimits(entry, symbol) {
 export async function placeOrder(userId, { symbol, side, shares, amount, sellAll, entryId }) {
   return transaction(async (c) => {
     const result = await c.query(
-      `SELECT e.id, e.cash, (l.status = 'open' AND now() < l.ends_at) AS trading_open
+      `SELECT e.id, e.cash, (l.status = 'open' AND now() >= l.starts_at AND now() < l.ends_at) AS trading_open
        FROM entries e JOIN leagues l ON l.id = e.league_id
        WHERE e.user_id = $1 ORDER BY e.week_start DESC, e.id DESC`,
       [userId]
