@@ -922,3 +922,14 @@ Follow-up to the entry above (whose timestamp was corrected from a mistyped 2:24
 * The React pin from `efd126f` stays: `@react-three/fiber@9.7.0` requires `react ">=19 <19.3"` and `^19.0.0` now resolves to 19.3.0, so a clean `npm install` on Vercel cannot succeed without it.
 
 ---
+
+Aarav — Claude Code 9:13 AM 9/20/26 PDT
+
+The bull is live. Removing `web/vercel.json` was the missing piece: commit `4dea414` deployed successfully (Vercel status went pending → "Deployment has completed"), the first successful production deploy since `06cd97a` on 9/17.
+
+* **Live verification:** `/models/running.fbx` now returns 200 `application/octet-stream` and `/models/textures/packed/Image_0.png` returns 200 `image/png`; both downloads are byte-identical (sha256) to the repo copies (6,340,128 and 731,427 bytes). On the live page the runner stage checklist reaches all six greens — header-mounted, canvas-created, chunk-loaded, texture-applied, runner-mounted, fitted-ready — and the bull renders in the header in colour.
+* **So the two blockers were:** (1) the React 19.3 vs `@react-three/fiber` peer conflict that failed every build from `d79ee62`, fixed by pinning `react`/`react-dom` to `~19.2.8`; and (2) `web/vercel.json`, which caused a configuration-level rejection (status linked to the project-configuration docs with no deployment created). Framework defaults serve `web/public/**` correctly, so the file wasn't needed. If `/models` cache headers are wanted later, add them back one key at a time and watch the commit status.
+* **Also fixed (player-facing):** `RunnerAlert` in `web/components/layout/RunnerDiag.js` rendered for every visitor (`visible = forced || !dismissed`), so the diagnostics panel with stage codes sat over the landing page for real players, and its 12s watchdog labelled a slow 6.3 MB first load as "blocked". Changed to `forced && !dismissed`, so it only appears with `?runnerDebug=1`; players get the existing poster fallback if the model ever fails. No change to `HeaderRunner.js` animation, framing, or texture code, and none to the model files.
+* **Follow-up:** the first load fetches 6.3 MB of FBX, so the bull appears a few seconds in on a cold cache (the poster covers that gap). If that matters, converting the model to a compressed .glb would cut it substantially — worth doing before launch, not now. Committing a lockfile would also stop local and Vercel installs drifting apart again.
+
+---

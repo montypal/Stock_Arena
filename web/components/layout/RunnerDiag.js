@@ -103,7 +103,10 @@ export default function RunnerAlert() {
   const ready = Boolean(snap.stages['fitted-ready']);
   const blocked = snap.errors.length > 0;
   const status = ready && !blocked ? 'running' : blocked ? 'blocked' : 'loading';
-  const visible = forced || !dismissed;
+  // Debugging tool, not player-facing: it only appears with ?runnerDebug=1.
+  // Players get the poster fallback if the bull can't load, never a panel of
+  // stage codes over the page.
+  const visible = forced && !dismissed;
   if (!visible) return null;
 
   const copyDiag = async () => {
