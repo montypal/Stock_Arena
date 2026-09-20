@@ -898,3 +898,16 @@ Deterministic texture fix at Jackson's request ("now fix the problem"). Same `ru
 * Follow-up: commit + push, confirm Vercel Root Directory is `web`, hard-refresh live and check the header.
 
 ---
+
+Aarav — Claude Code 2:24 AM 9/20/26 PDT
+
+Fixed the Vercel build failure that kept the 3D header bull (and every change since 9/18) off the live site.
+
+* **Diagnosis.** The live site was still serving commit `06cd97a`; `/models/running.fbx` and `/models/textures/packed/Image_0.png` returned 404 because they were never deployed. GitHub commit statuses show Vercel **failed every deployment** from `d79ee62` (the commit that added three/R3F and the model) onward — `d79ee62`, `d7ca24c`, `c4ca01c` all "Deployment has failed"; `06cd97a` was the last success. So the Root Directory was already correct and the files were committed fine (6,340,128-byte `running.fbx`, 731,427-byte PNG, no LFS, not ignored) — nothing was wrong with the asset side.
+* **Root cause.** `web/package.json` asked for `react: ^19.0.0` / `react-dom: ^19.0.0`, which now resolve to **19.3.0**, but `@react-three/fiber@9.7.0` declares `peerDependencies.react ">=19 <19.3"`. No lockfile is committed, so Vercel's clean `npm install` hits an unresolvable peer conflict and fails before `next build` runs. It built locally only because the local `node_modules` / untracked `package-lock.json` still pin an older React.
+* **Fix.** Pinned `react` and `react-dom` to `~19.2.8` (newest stable under 19.3; satisfies fiber's peer, drei's `react ^19`, and Next 15's `^19.0.0`). Verified against the npm registry that all other peers resolve: drei needs `three >=0.159` (we have 0.186) and `@react-three/fiber ^9.0.0`; fiber's expo/react-native/react-dom peers are all marked optional. Also removed `buildCommand` and `outputDirectory: ".next"` from `web/vercel.json` — overriding the output directory on a Next.js project can break the deployment; the `/models/(.*)` cache headers and `public` stay.
+* **Asset verification (local, no Node needed).** Loaded the real `running.fbx` + texture in a browser harness with three 0.186 and the same URL-modifier trick the app uses: the FBX parses in ~1.5s, has 1 skinned mesh and 1 animation clip ("mixamo.com", 0.70s), and its baked texture path (`/var/www/miconvertv2/outputs/.../textures/packed/Image_0`, which is dead) is redirected to the served PNG, which loads at 1024×1024. The bull rendered **in full colour** (white hide with brown patches). So the model, the animation and the texture redirect are all sound; only the deployment was broken.
+* **Not changed:** `HeaderRunner.js` animation/framing/texture code, the model files, the worker, the database, and `package-lock.json` (still untracked).
+* **Follow-up:** confirm the next deployment succeeds and the header bull renders live; if a future build fails again, GitHub commit statuses (`/repos/montypal/Stock_Arena/commits/<sha>/status`) show Vercel's verdict without dashboard access. Consider committing a lockfile so local and Vercel installs can't drift apart again.
+
+---
