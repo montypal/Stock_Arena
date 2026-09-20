@@ -1,34 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import Icon from './icons';
-import { report } from './RunnerDiag';
-
-// Tiny 3D runner, client-only so three.js never touches SSR/prerender.
-// While its (large) JS chunk loads — or forever if the chunk fails — a pure
-// CSS poster runs the same path, so the header is never an empty gap.
-const HeaderRunner = dynamic(() => import('./HeaderRunner'), {
-  ssr: false,
-  loading: () => (
-    <div className="runner-track" aria-hidden="true">
-      <div className="runner-fly-static">
-        <img
-          src="/models/textures/packed/Image_0.png"
-          className="runner-poster"
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-      </div>
-    </div>
-  ),
-});
 
 // Top bar on every screen: logo + wordmark, and on the right either the
 // player's coin balance (signed in) or a Drop in button that jumps to the
@@ -36,10 +10,6 @@ const HeaderRunner = dynamic(() => import('./HeaderRunner'), {
 export default function AppHeader({ coins }) {
   const path = usePathname() ?? '';
   const signedIn = coins !== null && coins !== undefined;
-
-  useEffect(() => {
-    report('stage', 'header-mounted', 'header mounted — 3D runner chunk loading');
-  }, []);
 
   return (
     <header className="app-header">
@@ -52,8 +22,6 @@ export default function AppHeader({ coins }) {
             STOCK<span>ARENA</span>
           </span>
         </Link>
-
-        <HeaderRunner />
 
         {signedIn ? (
           <Link href="/progress" className="coin-chip" aria-label={`${Number(coins).toLocaleString()} coins`}>

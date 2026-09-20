@@ -5,7 +5,6 @@ import '../styles/screens/battles.css';
 import '../styles/screens/trade.css';
 import '../styles/screens/account.css';
 import AppHeader from '../components/layout/header';
-import RunnerAlert from '../components/layout/RunnerDiag';
 import NavBar from '../components/layout/nav';
 import PointerGlow from '../components/layout/PointerGlow';
 import { currentUser } from '../lib/db/auth';
@@ -35,7 +34,6 @@ export default async function RootLayout({ children }) {
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body className={user ? 'signed-in' : undefined}>
         <AppHeader coins={user ? user.coins : null} />
-        <RunnerAlert />
         <div className="app">{children}</div>
         {user ? <NavBar /> : null}
         <PointerGlow />
