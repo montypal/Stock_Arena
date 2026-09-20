@@ -899,7 +899,7 @@ Deterministic texture fix at Jackson's request ("now fix the problem"). Same `ru
 
 ---
 
-Aarav — Claude Code 2:24 AM 9/20/26 PDT
+Aarav — Claude Code 9:06 AM 9/20/26 PDT
 
 Fixed the Vercel build failure that kept the 3D header bull (and every change since 9/18) off the live site.
 
@@ -909,5 +909,16 @@ Fixed the Vercel build failure that kept the 3D header bull (and every change si
 * **Asset verification (local, no Node needed).** Loaded the real `running.fbx` + texture in a browser harness with three 0.186 and the same URL-modifier trick the app uses: the FBX parses in ~1.5s, has 1 skinned mesh and 1 animation clip ("mixamo.com", 0.70s), and its baked texture path (`/var/www/miconvertv2/outputs/.../textures/packed/Image_0`, which is dead) is redirected to the served PNG, which loads at 1024×1024. The bull rendered **in full colour** (white hide with brown patches). So the model, the animation and the texture redirect are all sound; only the deployment was broken.
 * **Not changed:** `HeaderRunner.js` animation/framing/texture code, the model files, the worker, the database, and `package-lock.json` (still untracked).
 * **Follow-up:** confirm the next deployment succeeds and the header bull renders live; if a future build fails again, GitHub commit statuses (`/repos/montypal/Stock_Arena/commits/<sha>/status`) show Vercel's verdict without dashboard access. Consider committing a lockfile so local and Vercel installs can't drift apart again.
+
+---
+
+Aarav — Claude Code 9:12 AM 9/20/26 PDT
+
+Follow-up to the entry above (whose timestamp was corrected from a mistyped 2:24 AM to the real 9:06 AM PDT before pushing this commit).
+
+* The React pin commit `efd126f` still failed, but with a **different** signature: GitHub's Vercel status now reads "Deployment failed." and links to Vercel's *project-configuration docs* with no deployment/inspector URL, and it appeared in the same second as the push. The earlier failures (`d79ee62`, `d7ca24c`, `c4ca01c`) linked to a real deployment inspector, i.e. they got as far as building. So `efd126f` was rejected before a deployment was created — a configuration-level rejection.
+* Vercel's API refuses unauthenticated reads of the failed deployments (`403 missing authentication token`), so the build log is not reachable from this machine; the diagnosis so far comes entirely from GitHub commit statuses.
+* Removing `web/vercel.json` as an A/B test: the project deployed fine for weeks without it (it was added in `c4ca01c`), and its only content was optional `/models` cache headers plus `public: true`. If the next commit deploys, the config file was the blocker; if it fails again at configuration level, the problem is in the Vercel project settings themselves (Root Directory / Build Command / plan limits), which needs dashboard or token access to inspect.
+* The React pin from `efd126f` stays: `@react-three/fiber@9.7.0` requires `react ">=19 <19.3"` and `^19.0.0` now resolves to 19.3.0, so a clean `npm install` on Vercel cannot succeed without it.
 
 ---
