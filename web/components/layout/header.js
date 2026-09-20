@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Icon from './icons';
+import { report } from './RunnerDiag';
 
 // Tiny 3D runner, client-only so three.js never touches SSR/prerender.
 // While its (large) JS chunk loads — or forever if the chunk fails — a pure
@@ -37,8 +38,7 @@ export default function AppHeader({ coins }) {
   const signedIn = coins !== null && coins !== undefined;
 
   useEffect(() => {
-    window.__SA_RUNNER = 'header-mounted';
-    console.log('[Header] mounted — 3D runner chunk loading (or fallback showing)');
+    report('stage', 'header-mounted', 'header mounted — 3D runner chunk loading');
   }, []);
 
   return (

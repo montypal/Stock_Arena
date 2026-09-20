@@ -4,6 +4,7 @@ import { Component, Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useAnimations, useFBX } from '@react-three/drei';
 import * as THREE from 'three';
+import { report } from './RunnerDiag';
 
 const MODEL_URL = '/models/running.fbx';
 const DEBUG = false;
@@ -20,8 +21,7 @@ if (typeof window !== 'undefined') {
   THREE.DefaultLoadingManager.setURLModifier((url) =>
     url.includes('Image_0') ? LOCAL_TEXTURE : url
   );
-  window.__SA_RUNNER = 'chunk-loaded';
-  console.log('[HeaderRunner] chunk loaded — mounting 3D runner');
+  report('stage', 'chunk-loaded', '3D chunk loaded — mounting runner');
 }
 
 // Warm the fetch so the first traversal already has the model.
@@ -40,6 +40,7 @@ class RunnerErrorBoundary extends Component {
   }
 
   componentDidCatch(error) {
+    report('error', 'model', `three.js threw while loading ${MODEL_URL} — see console`);
     console.error(`[HeaderRunner] ERROR: failed to load ${MODEL_URL}`, error);
   }
 
@@ -75,6 +76,7 @@ function RunnerModel({ onReady }) {
       }))
     );
     if (fbx.animations.length === 0) {
+      report('error', 'animation', 'FBX has zero animation clips — the bull renders static');
       console.error(
         '[HeaderRunner] ERROR: FBX has zero animation clips — the bull will render static. Re-export from Mixamo with the run animation baked.'
       );
@@ -88,6 +90,7 @@ function RunnerModel({ onReady }) {
   // keep Y (the run bob).
   useEffect(() => {
     if (names.length === 0) {
+      report('error', 'animation', 'no playable clip found in fbx.animations');
       console.error('[HeaderRunner] ERROR: no playable clip found in fbx.animations.');
       return;
     }
@@ -107,6 +110,7 @@ function RunnerModel({ onReady }) {
     const clipName = names[0];
     const action = actions[clipName];
     if (!action) {
+      report('error', 'animation', `clip "${clipName}" has no action — bone names may not match`);
       console.error(
         `[HeaderRunner] ERROR: clip "${clipName}" has no action — bone names may not match the hierarchy.`
       );
@@ -132,6 +136,7 @@ function RunnerModel({ onReady }) {
       fitted.current = true;
       const box = new THREE.Box3().setFromObject(group.current);
       if (box.isEmpty()) {
+        report('error', 'framing', 'posed bounds are empty — cannot frame the model');
         console.error('[HeaderRunner] ERROR: posed bounds are empty — cannot frame the model.');
         return;
       }
@@ -146,6 +151,7 @@ function RunnerModel({ onReady }) {
         center.toArray().map((v) => Number(v.toFixed(3)))
       );
       if (!(size.y > 0) || !Number.isFinite(size.y)) {
+        report('error', 'framing', 'posed bounds have no height — cannot frame the model');
         console.error('[HeaderRunner] ERROR: posed bounds have no height — cannot frame the model.');
         return;
       }
@@ -188,10 +194,14 @@ function RunnerModel({ onReady }) {
           if (m.color) m.color.set('#ffffff');
           m.needsUpdate = true;
         });
+        report('stage', 'texture-applied', `texture on ${mats.length} material(s)`);
         console.log(`[HeaderRunner] texture applied to ${mats.length} material(s): ${LOCAL_TEXTURE}`);
       },
       undefined,
-      (err) => console.error(`[HeaderRunner] ERROR: texture 404 or decode failure: ${LOCAL_TEXTURE}`, err)
+      (err) => {
+        report('error', 'texture', `texture 404 or decode failure: ${LOCAL_TEXTURE}`);
+        console.error(`[HeaderRunner] ERROR: texture 404 or decode failure: ${LOCAL_TEXTURE}`, err);
+      }
     );
     return () => {
       cancelled = true;
@@ -222,31 +232,42 @@ export default function HeaderRunner() {
 
   useEffect(() => {
     let alive = true;
-    window.__SA_RUNNER = 'runner-mounted';
-    console.log('[HeaderRunner] component mounted — checking files + WebGL');
+    report('stage', 'runner-mounted', 'component mounted — checking files + WebGL');
     (async () => {
       try {
         const fbxRes = await fetch(MODEL_URL, { method: 'HEAD' });
         if (!alive) return;
         console.log(`[HeaderRunner] diag fbx ${fbxRes.status} ${MODEL_URL} (${fbxRes.headers.get('content-type') || 'no-ctype'})`);
-        if (!fbxRes.ok) console.error(`[HeaderRunner] ERROR: FBX ${fbxRes.status} — check Vercel Root Directory is web and web/public/models/running.fbx is deployed.`);
+        if (!fbxRes.ok) {
+          report('error', 'fbx', `FBX ${fbxRes.status} — check Vercel Root Directory is web`);
+          console.error(`[HeaderRunner] ERROR: FBX ${fbxRes.status} — check Vercel Root Directory is web and web/public/models/running.fbx is deployed.`);
+        }
       } catch (e) {
+        report('error', 'fbx', `FBX fetch failed — likely 404 or network: ${MODEL_URL}`);
         console.error(`[HeaderRunner] ERROR: FBX fetch failed — likely 404 or network: ${MODEL_URL}`, e);
       }
       try {
         const texRes = await fetch(LOCAL_TEXTURE, { method: 'HEAD' });
         if (!alive) return;
         console.log(`[HeaderRunner] diag texture ${texRes.status} ${LOCAL_TEXTURE} (${texRes.headers.get('content-type') || 'no-ctype'})`);
-        if (!texRes.ok) console.error(`[HeaderRunner] ERROR: texture ${texRes.status} — check web/public/models/textures/packed/Image_0.png is deployed.`);
+        if (!texRes.ok) {
+          report('error', 'texture', `texture ${texRes.status} — check Image_0.png is deployed`);
+          console.error(`[HeaderRunner] ERROR: texture ${texRes.status} — check web/public/models/textures/packed/Image_0.png is deployed.`);
+        }
       } catch (e) {
+        report('error', 'texture', `texture fetch failed: ${LOCAL_TEXTURE}`);
         console.error(`[HeaderRunner] ERROR: texture fetch failed: ${LOCAL_TEXTURE}`, e);
       }
       try {
         const c = document.createElement('canvas');
         const gl = c.getContext('webgl2') || c.getContext('webgl');
         console.log(`[HeaderRunner] diag webgl: ${gl ? 'available' : 'UNAVAILABLE'}`);
-        if (!gl) console.error('[HeaderRunner] ERROR: WebGL unavailable — 3D cannot render, poster stays.');
+        if (!gl) {
+          report('error', 'webgl', 'WebGL unavailable — 3D cannot render, poster stays');
+          console.error('[HeaderRunner] ERROR: WebGL unavailable — 3D cannot render, poster stays.');
+        }
       } catch (e) {
+        report('error', 'webgl', 'WebGL check threw — 3D cannot render');
         console.error('[HeaderRunner] ERROR: WebGL check threw', e);
       }
     })();
@@ -344,8 +365,8 @@ export default function HeaderRunner() {
             camera={{ position: [0, 0.62, 2.15], fov: 35 }}
             style={{ background: 'transparent' }}
             onCreated={(state) => {
+              report('stage', 'canvas-created', 'WebGL canvas created');
               console.log('[HeaderRunner] WebGL canvas created');
-              window.__SA_RUNNER = 'canvas-created';
             }}
           >
             <ambientLight intensity={1.15} />
@@ -353,7 +374,12 @@ export default function HeaderRunner() {
             <directionalLight position={[-1.5, 1, 1]} intensity={0.45} />
             <RunnerErrorBoundary>
               <Suspense fallback={null}>
-                <RunnerModel onReady={() => setReady(true)} />
+                <RunnerModel
+                  onReady={() => {
+                    report('stage', 'fitted-ready', 'bull fitted, scaled, and running');
+                    setReady(true);
+                  }}
+                />
               </Suspense>
             </RunnerErrorBoundary>
           </Canvas>
