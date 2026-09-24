@@ -933,3 +933,13 @@ The bull is live. Removing `web/vercel.json` was the missing piece: commit `4dea
 * **Follow-up:** the first load fetches 6.3 MB of FBX, so the bull appears a few seconds in on a cold cache (the poster covers that gap). If that matters, converting the model to a compressed .glb would cut it substantially — worth doing before launch, not now. Committing a lockfile would also stop local and Vercel installs drifting apart again.
 
 ---
+
+Jackson OpenCode 10:38 PM 9/23/26 PDT
+
+Re-created project `AGENTS.md` with a Coding Rules section at Jackson's request (explicit instruction: "add this to agents.md for this project only"). Pulled `https://github.com/montypal/Stock_Arena` first — already up to date on `main` @ `d097616`; no collaborator conflicts; tree clean except untracked `web/package-lock.json` (left untracked).
+
+* Files changed: new `AGENTS.md` (Coding Rules: before-changing-code — read relevant files, read contextHistory.md, inspect architecture, search for existing implementations; planning — TODO list, dependencies, one logical task at a time; implementation — smallest changes, reuse, no unjustified rewrites, keep frontend/backend contracts in sync; testing — run build/test, check TS/JS errors, fix before declaring done, verify feature works; git — pull first, never overwrite collaborators, commit logical changes, push when appropriate; context history — read before editing, append date/agent/files/what/why/details after meaningful changes). This is a docs-only change — no code, secrets, or DB touched.
+* Why: Jackson wants the coding rules living in `AGENTS.md` again (project rules were moved solely into `contextHistory.md` on 9/14 when the prior `AGENTS.md` was removed); the two now coexist — `AGENTS.md` holds these coding rules, `contextHistory.md` remains the shared memory and gameplay source of truth.
+* Important details: `AGENTS.md` content is exactly as Jackson supplied; applies to this project only (the global `~/.config/opencode/AGENTS.md` was not touched). `contextHistory.md` entry appended per the new rules. Committed and pushed to `origin/main` so Railway/Vercel collaborators see it.
+
+---
