@@ -8,7 +8,6 @@ import {
   joinableWeek,
   leaderboard,
   marketOpen,
-  orders,
   summarize,
 } from '../lib/trading/game';
 import { first } from '../lib/utils/format';
@@ -18,12 +17,12 @@ import StandingCard from '../components/battle/StandingCard';
 import Landing from '../components/home/Landing';
 import FindBattleCard from '../components/home/FindBattleCard';
 import HoldingsCard from '../components/home/HoldingsCard';
-import PendingOrdersCard from '../components/home/PendingOrdersCard';
+import PortfolioSummary from '../components/home/PortfolioSummary';
 import RoomSnapshot from '../components/home/RoomSnapshot';
 
 // Home. Signed out: the landing page. Signed in: this week's league at a
-// glance -- standing, stocks, pending orders, career record, and the room.
-// The shell (header + join card) paints first; standings, holdings, orders,
+// glance -- standing, stocks, portfolio summary, career record, and the room.
+// The shell (header + join card) paints first; standings, holdings, portfolio,
 // career stats and the room snapshot stream in via Suspense.
 export default async function Home({ searchParams }) {
   const sp = await searchParams;
@@ -139,10 +138,9 @@ async function CareerStats({ userId }) {
 }
 
 async function HomeDetail({ entry, userId, week, showJoin }) {
-  const [career, rows, pending, board] = await Promise.all([
+  const [career, rows, board] = await Promise.all([
     careerStats(userId),
     holdings(entry.id),
-    orders(entry.id, { pending: true }),
     leaderboard(entry.room_id),
   ]);
   const summary = summarize(entry, rows);
@@ -153,7 +151,7 @@ async function HomeDetail({ entry, userId, week, showJoin }) {
         <StandingCard entry={entry} summary={summary} place={place} total={board.length} />
         {showJoin ? <FindBattleCard week={week} entry={entry} /> : null}
         <HoldingsCard rows={rows} tradingOpen={entry.trading_open} />
-        {pending.length > 0 ? <PendingOrdersCard orders={pending} /> : null}
+        <PortfolioSummary entry={entry} rows={rows} summary={summary} />
       </div>
       <aside className="col" aria-label="Your record and room">
         <div className="grid-3 home-stats">

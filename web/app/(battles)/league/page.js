@@ -13,11 +13,12 @@ import {
 import { first } from '../../../lib/utils/format';
 import { ordinal, weekRange } from '../../../lib/utils/format';
 import AutoRefresh from '../../../components/layout/refresh';
-import Icon from '../../../components/layout/icons';
+import PortfolioSummary from '../../components/home/PortfolioSummary';
 import { Flash, PageHead } from '../../../components/layout/ui';
 import StandingCard from '../../../components/battle/StandingCard';
 import TierCards from '../../../components/battle/TierCards';
 import LeagueBoard from '../../../components/battle/LeagueBoard';
+import Icon from '../../../components/layout/icons';
 
 export default async function LeaguePage({ searchParams }) {
   const sp = await searchParams;
@@ -101,6 +102,7 @@ async function LeagueDetail({ entry, remaining, ws, live }) {
       <div className="battle-league">
         <div className="battle-aside">
           <StandingCard entry={entry} summary={summary} place={place} total={board.length} />
+          <PortfolioSummary entry={entry} rows={rows} summary={summary} />
           {settled ? (
             <p className="glass rim-gold battle-final" role="status">
               <Icon name="trophy" size={22} strokeWidth={2} />

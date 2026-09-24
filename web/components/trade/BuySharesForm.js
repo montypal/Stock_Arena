@@ -8,7 +8,7 @@ import { money } from '../../lib/utils/format';
 // Everything reacts to the count: the cost updates per tap, and the +
 // button and the buy button gray out the moment you can't afford more.
 export default function BuySharesForm({ symbol, price, available, maxShares }) {
-  const [n, setN] = useState(0);
+  const [n, setN] = useState(1);
   const cost = n * price;
   const canAffordMore = maxShares != null ? n < maxShares : cost < available;
   const canBuy = n >= 1 && cost <= available + 0.005;
@@ -22,8 +22,8 @@ export default function BuySharesForm({ symbol, price, available, maxShares }) {
             type="button"
             className="stepper-btn"
             aria-label="One fewer share"
-            disabled={n <= 0}
-            onClick={() => setN((v) => Math.max(0, v - 1))}
+            disabled={n <= 1}
+            onClick={() => setN((v) => Math.max(1, v - 1))}
           >
             −
           </button>
@@ -42,9 +42,9 @@ export default function BuySharesForm({ symbol, price, available, maxShares }) {
           </button>
         </span>
         <small>
-          {n === 0
-            ? `Up to ${maxShares} shares — buy as many as you can afford.`
-            : `Total ≈ ${money(Math.round(cost * 100) / 100)} for ${n} ${n === 1 ? 'share' : 'shares'}.`}
+          {n === 1
+            ? `1 share ≈ ${money(Math.round(cost * 100) / 100)}.`
+            : `${n} shares ≈ ${money(Math.round(cost * 100) / 100)}.`}
         </small>
       </label>
       <SubmitButton

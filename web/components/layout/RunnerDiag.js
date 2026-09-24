@@ -14,15 +14,16 @@ export const STAGES = [
 // Actionable next step per failure code. Shown under each reported error so a
 // viewer (or a pasted bug report) points at the exact fix, not just a symptom.
 export const GUIDANCE = {
-  fbx: 'Check the Vercel Root Directory is "web" and web/public/models/running.fbx is deployed, then hard-refresh.',
+  glb:
+    'Check the Vercel Root Directory is "web" and web/public/models/retargeted_animations.glb is deployed, then hard-refresh.',
   texture:
     'Check web/public/models/textures/packed/Image_0.png is deployed next to the extensionless Image_0 copy, then hard-refresh.',
   webgl:
     'This browser reports no WebGL (disabled GPU, blocklist, or headless without SwiftShader). The poster fallback stays; enable hardware acceleration and reload.',
   animation:
-    'The FBX parsed but carries no playable clip. Re-export from Mixamo with the run animation baked in — do not swap in the unrigged Copilot3D file.',
+    'The GLB parsed but carries no playable clip. Re-export from the rigging tool with the run animation baked in.',
   framing:
-    'The rig posed an empty bounding box, so auto-fit refused to guess. The FBX may be corrupt; check the F12 console for the bounds log.',
+    'The rig posed an empty bounding box, so auto-fit refused to guess. The GLB may be corrupt; check the F12 console for the bounds log.',
   model:
     'three.js threw while loading the model (chunk, parse, or GPU failure). Check the F12 console and the network tab for the failing URL.',
   timeout:
@@ -196,8 +197,7 @@ export default function RunnerAlert() {
           </ul>
         ) : null}
         <p className="runner-alert-hint">
-          Model <code>/models/running.fbx</code> + texture{' '}
-          <code>/models/textures/packed/Image_0.png</code>. Add <code>?runnerDebug=1</code> to
+          Model <code>/models/retargeted_animations.glb</code>. Add <code>?runnerDebug=1</code> to
           keep this panel pinned open.
         </p>
       </div>

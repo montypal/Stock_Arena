@@ -11,7 +11,7 @@ import { useState } from 'react';
 // The visible number is local state; a hidden input carries the value into
 // the server-action form so what the player sees is what gets submitted.
 export default function ShareStepper({ min = 0, max, defaultValue = 0, label = 'Shares', hint }) {
-  const [n, setN] = useState(defaultValue);
+  const [n, setN] = useState(defaultValue ?? min);
   const clamp = (v) => Math.max(min, max != null ? Math.min(max, v) : v);
 
   return (

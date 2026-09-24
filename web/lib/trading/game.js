@@ -313,8 +313,6 @@ export async function stock(symbol) {
 export async function tradeLimits(entry, symbol) {
   const row = await one(
     `SELECT
-       (SELECT COALESCE(SUM(amount), 0) FROM orders
-         WHERE entry_id = $1 AND status = 'pending' AND side = 'buy') AS pending_buys,
        (SELECT COALESCE(SUM(COALESCE(p.shares * lp.price, p.cost_basis)), 0)
           FROM positions p LEFT JOIN latest_price lp ON lp.symbol = p.symbol
           WHERE p.entry_id = $1) AS invested,
@@ -332,7 +330,7 @@ export async function tradeLimits(entry, symbol) {
     [symbol]
   );
   const price = priceRow.length > 0 ? Number(priceRow[0].price) : 0;
-  const available = Math.max(0, cash - Number(row.pending_buys));
+  const available = cash;
   const maxBuy = Math.floor(available * 100) / 100;
   const maxShares = price > 0 ? Math.floor(available / price) : 0;
   return {
@@ -378,43 +376,74 @@ export async function placeOrder(userId, { symbol, side, shares, amount, sellAll
       throw new GameError("This stock doesn't have a price yet. Try again after the next update.");
     }
 
-    const limits = await tradeLimits(targetEntry, symbol);
-
     if (side === 'buy') {
       if (!(shares >= 1)) throw new GameError('Enter at least 1 share.');
       if (!Number.isInteger(shares)) throw new GameError('Whole shares only.');
       const estimatedAmount = Math.round(shares * quote.price * 100) / 100;
-      if (estimatedAmount > limits.available + 0.005) {
-        throw new GameError(`You have ${money(limits.available)} available to spend.`);
+      if (estimatedAmount > targetEntry.cash + 0.005) {
+        throw new GameError(`You have ${money(targetEntry.cash)} to spend.`);
       }
+
+      // Execute immediately: deduct cash, record position, insert filled order.
       await c.query(
-        `INSERT INTO orders (entry_id, symbol, side, amount, shares) VALUES ($1, $2, 'buy', $3, $4)`,
-        [targetEntry.id, symbol, estimatedAmount, shares]
+        `UPDATE entries SET cash = cash - $1 WHERE id = $2`,
+        [estimatedAmount, targetEntry.id]
+      );
+      await c.query(
+        `INSERT INTO positions (entry_id, symbol, shares, cost_basis)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (entry_id, symbol) DO UPDATE SET
+           shares = positions.shares + $3,
+           cost_basis = positions.cost_basis + $4`,
+        [targetEntry.id, symbol, shares, estimatedAmount]
+      );
+      await c.query(
+        `INSERT INTO orders (entry_id, symbol, side, amount, shares, status, fill_price, fill_shares, fill_amount, filled_at)
+         VALUES ($1, $2, 'buy', $3, $4, 'filled', $5, $4, $3, now())`,
+        [targetEntry.id, symbol, estimatedAmount, shares, quote.price]
       );
       return;
     }
 
     if (side === 'sell') {
-      if (!(limits.shares > 0)) throw new GameError(`You don't own any ${symbol}.`);
+      const posResult = await c.query(
+        `SELECT shares, cost_basis FROM positions WHERE entry_id = $1 AND symbol = $2`,
+        [targetEntry.id, symbol]
+      );
+      const pos = posResult.rows[0];
+      if (!pos || pos.shares <= 0) throw new GameError(`You don't own any ${symbol}.`);
       if (sellAll) {
-        await c.query(
-          `INSERT INTO orders (entry_id, symbol, side, sell_all) VALUES ($1, $2, 'sell', true)`,
-          [targetEntry.id, symbol]
-        );
-        return;
+        shares = pos.shares;
       }
       if (!(shares >= 1)) throw new GameError('Enter at least 1 share.');
       if (!Number.isInteger(shares)) throw new GameError('Whole shares only.');
-      if (shares > limits.shares) throw new GameError(`You don't own that many ${symbol}.`);
+      if (shares > pos.shares) throw new GameError(`You only own ${pos.shares} shares of ${symbol}.`);
+
       const estimatedAmount = Math.round(shares * quote.price * 100) / 100;
-      if (estimatedAmount > limits.positionValue + 0.005) {
-        throw new GameError(
-          `Your ${symbol} is worth about ${money(limits.positionValue)}. Use Sell all to sell everything.`
+
+      // Execute immediately: add cash, adjust position, insert filled order.
+      await c.query(
+        `UPDATE entries SET cash = cash + $1 WHERE id = $2`,
+        [estimatedAmount, targetEntry.id]
+      );
+      if (shares >= pos.shares) {
+        await c.query(
+          `DELETE FROM positions WHERE entry_id = $1 AND symbol = $2`,
+          [targetEntry.id, symbol]
+        );
+      } else {
+        const costPerShare = pos.cost_basis / pos.shares;
+        const reduction = costPerShare * shares;
+        await c.query(
+          `UPDATE positions SET shares = shares - $1, cost_basis = cost_basis - $2
+           WHERE entry_id = $3 AND symbol = $4`,
+          [shares, reduction, targetEntry.id, symbol]
         );
       }
       await c.query(
-        `INSERT INTO orders (entry_id, symbol, side, amount, shares) VALUES ($1, $2, 'sell', $3, $4)`,
-        [targetEntry.id, symbol, estimatedAmount, shares]
+        `INSERT INTO orders (entry_id, symbol, side, amount, shares, status, fill_price, fill_shares, fill_amount, filled_at)
+         VALUES ($1, $2, 'sell', $3, $4, 'filled', $5, $4, $3, now())`,
+        [targetEntry.id, symbol, estimatedAmount, shares, quote.price]
       );
       return;
     }

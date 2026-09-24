@@ -1,9 +1,10 @@
 import { requireUser } from '../../../lib/db/auth';
-import { careerStats, pastEntries, tierInfo } from '../../../lib/trading/game';
+import { careerStats, pastEntries, tierInfo, holdings, summarize } from '../../../lib/trading/game';
 import { money, ordinal, signedMoney, tone, weekLabel } from '../../../lib/utils/format';
 import { PageHead } from '../../../components/layout/ui';
 import CoinsCard from '../../../components/profile/CoinsCard';
 import ForgetDevice from '../../../components/auth/ForgetDevice';
+import PortfolioSummary from '../../../components/home/PortfolioSummary';
 
 const ACH_DEFS = [
   {
@@ -81,6 +82,15 @@ export default async function ProfilePage() {
     loyal: podiums >= 3,
   };
   const unlockedCount = Object.values(unlocked).filter(Boolean).length;
+
+  // Current league portfolio
+  const entry = history.length > 0 ? history[0] : null;
+  let portfolioRows = [];
+  let portfolioSummary = null;
+  if (entry) {
+    portfolioRows = await holdings(entry.id);
+    portfolioSummary = summarize(entry, portfolioRows);
+  }
 
   // The stats row shows full career totals (same source as Progress);
   // pastEntries() above only covers the latest 20 settled leagues.
@@ -189,6 +199,10 @@ export default async function ProfilePage() {
               </div>
             </dl>
           </CoinsCard>
+
+          {entry && entry.trading_open ? (
+            <PortfolioSummary entry={entry} rows={portfolioRows} summary={portfolioSummary} />
+          ) : null}
 
           <section className="card acct-notifs-card">
             <div className="card-head">

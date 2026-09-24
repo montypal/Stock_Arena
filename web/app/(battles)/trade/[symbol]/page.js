@@ -1,14 +1,15 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '../../../../lib/db/auth';
-import { entriesForWeek, joinableWeek, marketOpen, orders, stock, tradeLimits } from '../../../../lib/trading/game';
+import { entriesForWeek, holdings, joinableWeek, leaderboard, marketOpen, stock, summarize, tradeLimits } from '../../../../lib/trading/game';
 import { first } from '../../../../lib/utils/format';
 import { money, pct, shareCount, timeET } from '../../../../lib/utils/format';
 import { cancel, trade } from '../../../../lib/actions';
 import AutoRefresh from '../../../../components/layout/refresh';
 import Icon from '../../../../components/layout/icons';
 import SubmitButton from '../../../../components/layout/SubmitButton';
-import { Flash } from '../../../../components/layout/ui';
+import { Flash } from '../../../../components/ui';
+import PortfolioSummary from '../../../../components/home/PortfolioSummary';
 import ShareStepper from '../../../../components/trade/ShareStepper';
 import BuySharesForm from '../../../../components/trade/BuySharesForm';
 import { changeTone, dayChange } from '../../../../components/trade/change';
@@ -32,10 +33,12 @@ export default async function StockPage({ params, searchParams }) {
   }
   const showPicker = entries.length > 1;
 
-  const [limits, pending] = entry
-    ? await Promise.all([tradeLimits(entry, symbol), orders(entry.id, { pending: true })])
+  const [limits, rows] = entry
+    ? await Promise.all([tradeLimits(entry, symbol), holdings(entry.id)])
     : [null, []];
-  const pendingHere = pending.filter((o) => o.symbol === symbol);
+  const summary = summarize(entry, rows);
+  const board = await leaderboard(entry?.room_id ?? 0);
+  const place = entry ? board.findIndex((r) => r.entry_id === entry.id) + 1 : 0;
   const change = dayChange(s);
   const canTrade = entry?.trading_open && s.price != null;
   const holding = Boolean(limits && limits.shares > 0);
@@ -120,21 +123,8 @@ export default async function StockPage({ params, searchParams }) {
           ) : null}
         </div>
 
-        <div className={`col trade-actions${canSell ? ' trade-actions-sell' : ''}`}>
-          {!entry ? (
-            <p className="flash trade-note">
-              <Link href="/league">Join a league</Link> to trade {symbol}.
-            </p>
-          ) : !entry.trading_open ? (
-            <p className="flash trade-note">
-              Trading is closed for this league. <Link href="/league">Join the next one</Link> on the Battles tab.
-            </p>
-          ) : s.price == null ? (
-            <p className="flash trade-note">
-              {symbol} doesn&apos;t have a price yet. Check back after the next update.
-            </p>
-          ) : null}
-
+        <aside className="col">
+          <PortfolioSummary entry={entry} rows={rows} summary={summary} />
           {canTrade ? (
             <section className="card trade-buy">
               <div className="card-head">
@@ -146,6 +136,9 @@ export default async function StockPage({ params, searchParams }) {
                 {entry ? <input type="hidden" name="entry_id" value={String(entry.id)} /> : null}
                 {entry ? <input type="hidden" name="tier" value={String(entry.tier)} /> : null}
                 <BuySharesForm symbol={symbol} price={Number(s.price)} available={limits.available} maxShares={limits.maxShares} />
+                <SubmitButton className="btn primary block" pendingLabel="Placing order…">
+                  Buy {symbol}
+                </SubmitButton>
               </form>
             </section>
           ) : null}
@@ -160,7 +153,7 @@ export default async function StockPage({ params, searchParams }) {
                 <input type="hidden" name="side" value="sell" />
                 {entry ? <input type="hidden" name="entry_id" value={String(entry.id)} /> : null}
                 {entry ? <input type="hidden" name="tier" value={String(entry.tier)} /> : null}
-                <ShareStepper min={0} max={limits.shares} defaultValue={0} hint={`Up to ${limits.shares} shares. To sell every share, use Sell all.`} />
+                <ShareStepper min={0} max={limits.shares} defaultValue={limits.shares} hint={`You own ${limits.shares} shares. Use Sell all to sell everything.`} />
                 <SubmitButton className="btn outline block" pendingLabel="Placing order…">
                   Place sell order
                 </SubmitButton>
@@ -178,39 +171,13 @@ export default async function StockPage({ params, searchParams }) {
             </section>
           ) : null}
 
-          {pendingHere.length > 0 ? (
-            <section className="card trade-pending">
-              <div className="card-head">
-                <h2>Pending orders</h2>
-                <span className="pill">{pendingHere.length}</span>
-              </div>
-              <ul className="rows">
-                {pendingHere.map((o) => (
-                  <li key={o.id} className="row">
-                    <span className="row-main">
-                      <strong>{o.side === 'buy' ? 'Buy' : 'Sell'}</strong>
-                      <span className="muted small">
-                        {o.sell_all ? 'All shares' : o.shares != null && o.shares > 0 ? `${o.shares} shares` : money(o.amount)} · placed {timeET(o.placed_at)}
-                      </span>
-                    </span>
-                    <form action={cancel}>
-                      <input type="hidden" name="order_id" value={o.id} />
-                      <input type="hidden" name="back" value={back} />
-                      <SubmitButton className="btn small ghost" pendingLabel="Cancelling…">
-                        Cancel
-                      </SubmitButton>
-                    </form>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-        </div>
+          {/* No pending orders — orders execute immediately now. */}
+        </aside>
       </div>
 
       <p className="fineprint">
-        Orders fill at the next price update after you place them, not the price shown here, so nobody can trade on a stale quote.{' '}
-        {marketOpen() ? 'That usually takes under a minute.' : 'While the market is closed, orders fill at the open.'}
+        Orders execute immediately at the price shown, not queued for later — what you see is what you get.
+        {!marketOpen() ? ' The market is closed right now, so trading is disabled.' : ''}
       </p>
     </main>
   );

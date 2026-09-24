@@ -177,18 +177,23 @@ export async function trade(formData) {
   const tier = tierRaw ? Number(tierRaw) : null;
   const back = tier ? `/trade/${symbol}?tier=${tier}` : `/trade/${symbol}`;
 
+  if (side !== 'buy' && side !== 'sell') {
+    redirect(to(back, 'error', 'Bad order side.'));
+    return;
+  }
+
   let error = null;
   try {
-    await placeOrder(user.id, { symbol, side, shares, amount: undefined, sellAll, entryId });
+    await placeOrder(user.id, { symbol, side, shares, sellAll, entryId });
   } catch (err) {
     error = playerMessage(err);
   }
-  if (error) redirect(to(back, 'error', error));
+  if (error) {
+    redirect(to(back, 'error', error));
+    return;
+  }
 
-  const when = marketOpen()
-    ? 'It fills at the next price update, usually within a minute.'
-    : 'The market is closed, so it fills when the market opens.';
-  redirect(to(back, 'ok', `Order placed. ${when}`));
+  redirect(to(back, 'ok', `Order executed — ${side === 'buy' ? `Bought` : `Sold`} ${shares} ${symbol}.`));
 }
 
 export async function cancel(formData) {
