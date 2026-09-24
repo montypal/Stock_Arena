@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '../../../../lib/db/auth';
-import { currentEntry, marketOpen, orders, stock, tradeLimits } from '../../../../lib/trading/game';
+import { entriesForWeek, joinableWeek, marketOpen, orders, stock, tradeLimits } from '../../../../lib/trading/game';
+import { first } from '../../../../lib/utils/format';
 import { money, pct, shareCount, timeET } from '../../../../lib/utils/format';
 import { cancel, trade } from '../../../../lib/actions';
 import AutoRefresh from '../../../../components/layout/refresh';
@@ -20,7 +21,17 @@ export default async function StockPage({ params, searchParams }) {
   const s = await stock(symbol);
   if (!s) notFound();
 
-  const entry = await currentEntry(user.id);
+  const ws = await joinableWeek();
+  const entries = await entriesForWeek(user.id, ws);
+  let entry = null;
+  if (entries.length > 0) {
+    const rawTier = String(first(sp?.tier) ?? '').trim();
+    const wanted = Number(rawTier) || null;
+    entry = wanted ? entries.find((e) => Number(e.tier) === wanted) : null;
+    if (!entry) entry = entries.find((e) => e.trading_open) || entries[0];
+  }
+  const showPicker = entries.length > 1;
+
   const [limits, pending] = entry
     ? await Promise.all([tradeLimits(entry, symbol), orders(entry.id, { pending: true })])
     : [null, []];
@@ -29,7 +40,7 @@ export default async function StockPage({ params, searchParams }) {
   const canTrade = entry?.trading_open && s.price != null;
   const holding = Boolean(limits && limits.shares > 0);
   const canSell = canTrade && holding;
-  const back = `/trade/${symbol}`;
+  const back = `/trade/${symbol}${entry ? `?tier=${entry.tier}` : ''}`;
 
   return (
     <main className="trade-detail">
@@ -38,6 +49,30 @@ export default async function StockPage({ params, searchParams }) {
         <Icon name="back" size={16} strokeWidth={2.2} />
         All stocks
       </Link>
+
+      {showPicker ? (
+        <div className="card" style={{ marginBottom: 12 }}>
+          <p className="eyebrow" style={{ marginBottom: 8 }}>
+            Trading in
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {entries.map((e) => {
+              const isSelected = Number(e.tier) === Number(entry.tier);
+              return (
+                <Link
+                  key={e.tier}
+                  href={`/trade/${symbol}?tier=${e.tier}`}
+                  className={isSelected ? 'pill blue' : 'pill'}
+                  aria-current={isSelected ? 'page' : undefined}
+                >
+                  {e.tier === 1000 ? '1K' : e.tier === 10000 ? '10K' : '100K'}
+                  {e.trading_open ? '' : ' · closed'}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       <div className="split">
         <div className="col">
@@ -54,16 +89,8 @@ export default async function StockPage({ params, searchParams }) {
                 </p>
               ) : null}
               {s.updated_at ? <p className="caption">Updated {timeET(s.updated_at)} ET</p> : null}
-          {s.description ? (
-            <p className="caption trade-desc">
-              {s.description}
-            </p>
-          ) : null}
-          {s.industry && (
-            <p className="caption trade-industry">
-              {s.industry}
-            </p>
-          )}
+              {s.description ? <p className="caption trade-desc">{s.description}</p> : null}
+              {s.industry && <p className="caption trade-industry">{s.industry}</p>}
             </div>
           </header>
 
@@ -73,6 +100,7 @@ export default async function StockPage({ params, searchParams }) {
             <section className="card trade-position">
               <div className="card-head">
                 <h2>Your position</h2>
+                {entry ? <span className="pill">{entry.tier === 1000 ? '1K' : entry.tier === 10000 ? '10K' : '100K'}</span> : null}
               </div>
               <dl className="stats">
                 <div>
@@ -99,8 +127,7 @@ export default async function StockPage({ params, searchParams }) {
             </p>
           ) : !entry.trading_open ? (
             <p className="flash trade-note">
-              Trading is closed for this league. <Link href="/league">Join the next one</Link> on
-              the Battles tab.
+              Trading is closed for this league. <Link href="/league">Join the next one</Link> on the Battles tab.
             </p>
           ) : s.price == null ? (
             <p className="flash trade-note">
@@ -116,12 +143,9 @@ export default async function StockPage({ params, searchParams }) {
               <form action={trade} className="stack">
                 <input type="hidden" name="symbol" value={symbol} />
                 <input type="hidden" name="side" value="buy" />
-                <BuySharesForm
-                  symbol={symbol}
-                  price={Number(s.price)}
-                  available={limits.available}
-                  maxShares={limits.maxShares}
-                />
+                {entry ? <input type="hidden" name="entry_id" value={String(entry.id)} /> : null}
+                {entry ? <input type="hidden" name="tier" value={String(entry.tier)} /> : null}
+                <BuySharesForm symbol={symbol} price={Number(s.price)} available={limits.available} maxShares={limits.maxShares} />
               </form>
             </section>
           ) : null}
@@ -134,12 +158,9 @@ export default async function StockPage({ params, searchParams }) {
               <form action={trade} className="stack">
                 <input type="hidden" name="symbol" value={symbol} />
                 <input type="hidden" name="side" value="sell" />
-                <ShareStepper
-              min={0}
-              max={limits.shares}
-              defaultValue={0}
-              hint={`Up to ${limits.shares} shares. To sell every share, use Sell all.`}
-            />
+                {entry ? <input type="hidden" name="entry_id" value={String(entry.id)} /> : null}
+                {entry ? <input type="hidden" name="tier" value={String(entry.tier)} /> : null}
+                <ShareStepper min={0} max={limits.shares} defaultValue={0} hint={`Up to ${limits.shares} shares. To sell every share, use Sell all.`} />
                 <SubmitButton className="btn outline block" pendingLabel="Placing order…">
                   Place sell order
                 </SubmitButton>
@@ -148,6 +169,8 @@ export default async function StockPage({ params, searchParams }) {
                 <input type="hidden" name="symbol" value={symbol} />
                 <input type="hidden" name="side" value="sell" />
                 <input type="hidden" name="all" value="1" />
+                {entry ? <input type="hidden" name="entry_id" value={String(entry.id)} /> : null}
+                {entry ? <input type="hidden" name="tier" value={String(entry.tier)} /> : null}
                 <SubmitButton className="btn ghost block" pendingLabel="Selling…">
                   Sell all {symbol}
                 </SubmitButton>
@@ -186,11 +209,8 @@ export default async function StockPage({ params, searchParams }) {
       </div>
 
       <p className="fineprint">
-        Orders fill at the next price update after you place them, not the price shown here, so
-        nobody can trade on a stale quote.{' '}
-        {marketOpen()
-          ? 'That usually takes under a minute.'
-          : 'While the market is closed, orders fill at the open.'}
+        Orders fill at the next price update after you place them, not the price shown here, so nobody can trade on a stale quote.{' '}
+        {marketOpen() ? 'That usually takes under a minute.' : 'While the market is closed, orders fill at the open.'}
       </p>
     </main>
   );

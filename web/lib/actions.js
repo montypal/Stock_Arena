@@ -171,11 +171,15 @@ export async function trade(formData) {
   const side = String(formData.get('side') ?? '');
   const sellAll = formData.get('all') === '1';
   const shares = Number(formData.get('shares'));
-  const back = `/trade/${symbol}`;
+  const entryIdRaw = String(formData.get('entry_id') ?? '').trim();
+  const entryId = entryIdRaw ? Number(entryIdRaw) : undefined;
+  const tierRaw = String(formData.get('tier') ?? '').trim();
+  const tier = tierRaw ? Number(tierRaw) : null;
+  const back = tier ? `/trade/${symbol}?tier=${tier}` : `/trade/${symbol}`;
 
   let error = null;
   try {
-    await placeOrder(user.id, { symbol, side, shares, amount: undefined, sellAll });
+    await placeOrder(user.id, { symbol, side, shares, amount: undefined, sellAll, entryId });
   } catch (err) {
     error = playerMessage(err);
   }

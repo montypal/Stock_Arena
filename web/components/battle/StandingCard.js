@@ -19,11 +19,11 @@ export default function StandingCard({ entry, summary, place, total }) {
   if (settled) {
     caption = `Final · ${ordinal(entry.final_rank)} place · +${Number(entry.coins_awarded ?? 0).toLocaleString()} coins`;
   } else if (entry.not_started) {
-    caption = `Starts Monday, ${weekLabel(entry.week_start)} · orders fill at the open`;
+    caption = `Starts Monday ${weekLabel(entry.week_start)} 7:00 AM ET · orders fill at the open`;
   } else if (entry.trading_open) {
     caption = `Trading closes in ${timeUntil(entry.trading_closes_at)}`;
   } else {
-    caption = 'Trading closed · final results Monday 12:00 AM ET';
+    caption = 'Trading closed · final results after Sunday 7:00 PM ET';
   }
 
   return (

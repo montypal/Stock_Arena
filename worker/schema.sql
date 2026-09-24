@@ -100,7 +100,7 @@ CREATE INDEX IF NOT EXISTS sessions_user ON sessions (user_id);
 
 -- ================================================================ leagues
 
--- One league per tier per week. Weeks start Monday 06:00 America/New_York
+-- One league per tier per week. Weeks start Monday 07:00 America/New_York
 -- and end Sunday 19:00; you can join and trade anytime that window is open.
 CREATE TABLE IF NOT EXISTS leagues (
     id                BIGSERIAL PRIMARY KEY,
@@ -153,6 +153,13 @@ BEGIN
         ALTER TABLE entries ADD CONSTRAINT entries_user_id_league_id_key UNIQUE (user_id, league_id);
     END IF;
 END $$;
+
+-- Align any still-open leagues created under the old Monday 06:00 window
+-- to the current Monday 07:00 start. Idempotent; settled leagues untouched.
+UPDATE leagues
+   SET starts_at = (week_start::timestamp + time '07:00') AT TIME ZONE 'America/New_York'
+ WHERE status = 'open'
+   AND starts_at = (week_start::timestamp + time '06:00') AT TIME ZONE 'America/New_York';
 
 CREATE INDEX IF NOT EXISTS entries_room   ON entries (room_id);
 CREATE INDEX IF NOT EXISTS entries_league ON entries (league_id);

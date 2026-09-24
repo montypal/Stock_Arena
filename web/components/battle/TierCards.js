@@ -14,16 +14,19 @@ import { money, weekLabel, weekRange } from '../../lib/utils/format';
 // Each card posts its tier to the `join` server action, which places the
 // player in a room of real players for that week. The submit button shows a
 // spinner and "Joining…" while that runs, and can't be pressed twice.
-export default function TierCards({ week, live, level = 2 }) {
+export default function TierCards({ week, live, level = 2, tiers, joinedTiers }) {
+  const list = Array.isArray(tiers) ? tiers : TIERS;
+  const joined = joinedTiers instanceof Set ? joinedTiers : null;
   const Title = level === 3 ? 'h3' : 'h2';
   const range = weekRange(week);
 
   return (
     <div className="battle-tiers">
-      {TIERS.map((t) => {
+      {list.map((t) => {
         const start = money(t.tier).replace(/\.00$/, '');
+        const isJoined = joined?.has(t.tier);
         return (
-          <article key={t.tier} className="card battle-tier">
+          <article key={t.tier} className="card battle-tier" aria-disabled={isJoined || undefined}>
             <div className="battle-tier-top">
               <span className="battle-medal" aria-hidden="true">
                 {t.medal}
@@ -72,15 +75,19 @@ export default function TierCards({ week, live, level = 2 }) {
               </ul>
             </div>
 
-            <form action={join} className="battle-join">
-              <input type="hidden" name="tier" value={t.tier} />
-              {/* The tier name is screen-reader text inside the label (not an
-                  aria-label) so "Joining…" is what gets read while pending. */}
-              <SubmitButton className="btn blue block" pendingLabel="Joining…">
-                Join · {range}
-                <span className="battle-sr">{`, $${t.label}`}</span>
-              </SubmitButton>
-            </form>
+            {isJoined ? (
+              <p className="pill" style={{ textAlign: 'center' }}>
+                Joined · {range}
+              </p>
+            ) : (
+              <form action={join} className="battle-join">
+                <input type="hidden" name="tier" value={t.tier} />
+                <SubmitButton className="btn blue block" pendingLabel="Joining…">
+                  Join · {range}
+                  <span className="battle-sr">{`, $${t.label}`}</span>
+                </SubmitButton>
+              </form>
+            )}
           </article>
         );
       })}
