@@ -78,18 +78,36 @@ function RunnerModel({ onReady }) {
     }
   }, [gltf]);
 
-  // Play the first available clip on a loop. The retargeted GLB's run cycle
-  // targets generic bone names. The pelvis (hip-equivalent) carries
-  // translation; if the clip bakes forward root motion the DOM flyer already
-  // translates the character across the bar, so pin pelvis X/Z and keep Y
-  // (the run bob). Track name format: "pelvis.translation".
+  // Keep the character in the render list. It is a single skinned mesh, and
+  // three.js frustum-culls it against a bounding volume taken from the bind
+  // pose -- measured here ~2.6 units above the origin, well outside the
+  // camera. The auto-fit below moves the group into view, but the stale volume
+  // still tested as off-screen: production cleared the canvas every frame and
+  // issued zero draw calls, so nothing ever drew. One small mesh is cheaper to
+  // always draw than to re-measure each frame.
+  useEffect(() => {
+    gltf.scene.traverse((o) => {
+      if (o.isMesh) o.frustumCulled = false;
+    });
+  }, [gltf]);
+
+  // Play the run cycle on a loop. The GLB ships five clips -- Backflip, Jog,
+  // Pushup, Run_Anime, Sprint -- and that order is an export artefact, so pick
+  // the run by name; index 0 is the backflip.
+  // The retargeted GLB's run cycle targets generic bone names. The pelvis
+  // (hip-equivalent) carries translation; if the clip bakes forward root
+  // motion the DOM flyer already translates the character across the bar, so
+  // pin pelvis X/Z and keep Y (the run bob). Track name format:
+  // "pelvis.translation".
   useEffect(() => {
     if (names.length === 0) {
       report('error', 'animation', 'no playable clip found in gltf.animations');
       console.error('[HeaderRunner] ERROR: no playable clip found in gltf.animations.');
       return;
     }
-    const clip = gltf.animations[0];
+    const clipName =
+      names.find((n) => /^run/i.test(n)) || names.find((n) => /run|sprint|jog/i.test(n)) || names[0];
+    const clip = gltf.animations.find((a) => a.name === clipName) || gltf.animations[0];
     clip.tracks.forEach((t) => {
       if (t.name === 'pelvis.translation' && t.values.length >= 3) {
         const x0 = t.values[0];
@@ -102,7 +120,6 @@ function RunnerModel({ onReady }) {
       }
     });
     console.log('[HeaderRunner] root motion pinned (pelvis X/Z locked, Y bob kept).');
-    const clipName = names[0];
     const action = actions[clipName];
     if (!action) {
       report('error', 'animation', `clip "${clipName}" has no action — bone names may not match`);
