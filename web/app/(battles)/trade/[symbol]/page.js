@@ -8,7 +8,7 @@ import { cancel, trade } from '../../../../lib/actions';
 import AutoRefresh from '../../../../components/layout/refresh';
 import Icon from '../../../../components/layout/icons';
 import SubmitButton from '../../../../components/layout/SubmitButton';
-import { Flash } from '../../../../components/ui';
+import { Flash } from '../../../../components/layout/ui';
 import PortfolioSummary from '../../../../components/home/PortfolioSummary';
 import ShareStepper from '../../../../components/trade/ShareStepper';
 import BuySharesForm from '../../../../components/trade/BuySharesForm';
@@ -36,7 +36,9 @@ export default async function StockPage({ params, searchParams }) {
   const [limits, rows] = entry
     ? await Promise.all([tradeLimits(entry, symbol), holdings(entry.id)])
     : [null, []];
-  const summary = summarize(entry, rows);
+  // No entry when the player hasn't joined a league this week; summarize()
+  // reads entry.cash, so it can't be called with null.
+  const summary = entry ? summarize(entry, rows) : null;
   const board = await leaderboard(entry?.room_id ?? 0);
   const place = entry ? board.findIndex((r) => r.entry_id === entry.id) + 1 : 0;
   const change = dayChange(s);
@@ -124,7 +126,9 @@ export default async function StockPage({ params, searchParams }) {
         </div>
 
         <aside className="col">
-          <PortfolioSummary entry={entry} rows={rows} summary={summary} />
+          {entry && summary ? (
+            <PortfolioSummary entry={entry} rows={rows} summary={summary} />
+          ) : null}
           {canTrade ? (
             <section className="card trade-buy">
               <div className="card-head">

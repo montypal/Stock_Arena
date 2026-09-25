@@ -5,6 +5,7 @@ import {
   TIERS,
   careerStats,
   entriesForWeek,
+  holdings,
   joinableWeek,
   leaderboard,
   marketOpen,

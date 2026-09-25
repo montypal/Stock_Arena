@@ -13,7 +13,7 @@ import {
 import { first } from '../../../lib/utils/format';
 import { ordinal, weekRange } from '../../../lib/utils/format';
 import AutoRefresh from '../../../components/layout/refresh';
-import PortfolioSummary from '../../components/home/PortfolioSummary';
+import PortfolioSummary from '../../../components/home/PortfolioSummary';
 import { Flash, PageHead } from '../../../components/layout/ui';
 import StandingCard from '../../../components/battle/StandingCard';
 import TierCards from '../../../components/battle/TierCards';
