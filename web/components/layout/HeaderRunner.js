@@ -17,7 +17,8 @@ if (typeof window !== 'undefined') {
 }
 
 // Warm the fetch so the first traversal already has the model.
-useGLTF.preload(MODEL_URL);
+// Only run in the browser — useGLTF.preload accesses browser-only APIs.
+if (typeof window !== 'undefined') useGLTF.preload(MODEL_URL);
 
 // Error boundary: useGLTF throws if the file 404s or fails to parse.
 // Surface that as a clear console error instead of a blank header.
@@ -32,7 +33,9 @@ class RunnerErrorBoundary extends Component {
   }
 
   componentDidCatch(error) {
-    report('error', 'model', `three.js threw while loading ${MODEL_URL} — see console`);
+    if (typeof window !== 'undefined') {
+      report('error', 'model', `three.js threw while loading ${MODEL_URL} — see console`);
+    }
     console.error(`[HeaderRunner] ERROR: failed to load ${MODEL_URL}`, error);
   }
 
@@ -185,6 +188,7 @@ export default function HeaderRunner() {
 
   useEffect(() => {
     let alive = true;
+    if (typeof window === 'undefined') return;
     report('stage', 'runner-mounted', 'component mounted — checking files + WebGL');
     (async () => {
       try {
