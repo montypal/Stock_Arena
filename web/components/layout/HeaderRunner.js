@@ -339,13 +339,21 @@ export default function HeaderRunner() {
             camera={{ position: [0, 0.62, 2.15], fov: 35 }}
             style={{ background: 'transparent' }}
             onCreated={(state) => {
+              // R3F defaults to ACESFilmic, whose midtone rolloff darkened the
+              // character; exposure above 1 restores surface detail.
+              state.gl.toneMappingExposure = 1.5;
               report('stage', 'canvas-created', 'WebGL canvas created');
-              console.log('[HeaderRunner] WebGL canvas created');
+              console.log(`[HeaderRunner] WebGL canvas created; toneMappingExposure=${state.gl.toneMappingExposure}`);
             }}
           >
-            <ambientLight intensity={1.15} />
-            <directionalLight position={[1.5, 2.5, 2]} intensity={1.6} />
-            <directionalLight position={[-1.5, 1, 1]} intensity={0.45} />
+            {/* Light intensities are physical units (three r155+ removed legacy
+                lighting), so these must stay well above the old 1.15/1.6/0.45
+                rig, which left the runner near-black against the header glass. */}
+            <ambientLight intensity={2.6} />
+            <hemisphereLight args={['#ffffff', '#93a7c4', 1.9]} />
+            <directionalLight position={[1.5, 2.5, 2]} intensity={3.4} />
+            <directionalLight position={[-1.5, 1, 1]} intensity={1.5} />
+            <directionalLight position={[0.4, 1.2, 3]} intensity={1.8} />
             <RunnerErrorBoundary>
               <Suspense fallback={null}>
                 <RunnerModel
