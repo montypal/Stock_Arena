@@ -7,7 +7,6 @@ export const STAGES = [
   'chunk-loaded',
   'runner-mounted',
   'canvas-created',
-  'texture-applied',
   'fitted-ready',
 ];
 
@@ -16,10 +15,8 @@ export const STAGES = [
 export const GUIDANCE = {
   glb:
     'Check the Vercel Root Directory is "web" and web/public/models/retargeted_animations.glb is deployed, then hard-refresh.',
-  texture:
-    'Check web/public/models/textures/packed/Image_0.png is deployed next to the extensionless Image_0 copy, then hard-refresh.',
   webgl:
-    'This browser reports no WebGL (disabled GPU, blocklist, or headless without SwiftShader). The poster fallback stays; enable hardware acceleration and reload.',
+    'This browser reports no WebGL (disabled GPU, blocklist, or headless without SwiftShader). The 3D runner stays hidden; enable hardware acceleration and reload.',
   animation:
     'The GLB parsed but carries no playable clip. Re-export from the rigging tool with the run animation baked in.',
   framing:
@@ -105,8 +102,8 @@ export default function RunnerAlert() {
   const blocked = snap.errors.length > 0;
   const status = ready && !blocked ? 'running' : blocked ? 'blocked' : 'loading';
   // Debugging tool, not player-facing: it only appears with ?runnerDebug=1.
-  // Players get the poster fallback if the bull can't load, never a panel of
-  // stage codes over the page.
+  // Players never see this panel, and never see a stand-in image either — the
+  // header shows the 3D bull or nothing at all.
   const visible = forced && !dismissed;
   if (!visible) return null;
 

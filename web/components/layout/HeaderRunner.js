@@ -1,6 +1,6 @@
 'use client';
 
-import { Component, Suspense, useEffect, useRef, useState } from 'react';
+import { Component, Suspense, useEffect, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -8,10 +8,21 @@ import { report } from './RunnerDiag';
 
 const MODEL_URL = '/models/retargeted_animations.glb';
 const DEBUG = false;
-const RUN_W = DEBUG ? 320 : 56;
-const RUN_H = DEBUG ? 180 : 36;
-const FIT_H = 1.175;
-const LOCAL_TEXTURE = '/models/textures/packed/Image_0.png';
+// Must match .runner-fly in globals.css.
+const RUN_W = DEBUG ? 320 : 64;
+// Character height in world units. Auto-fit normalises to one posed frame, but
+// the run cycle's full extent is 1.2x that, so rendered content is
+// ~0.833 * FIT_H of the canvas height; this keeps the hooves off the edge.
+const FIT_H = 1.05;
+// Measured bias (fraction of FIT_H) that recentres the run cycle: its lowest
+// footfall drops further below the fitted pose than the head rises above it.
+const V_BIAS = 0.048;
+// ANIM_RATE and CROSS_MS must scale together, or a slower stride rate at the
+// same crossing speed reads as a moonwalk.
+const ANIM_RATE = 0.6;
+const CROSS_MS = 3250;
+const GAP_MS = 2000;
+const OFF = 80;
 if (typeof window !== 'undefined') {
   report('stage', 'chunk-loaded', '3D chunk loaded — mounting runner');
 }
@@ -20,8 +31,9 @@ if (typeof window !== 'undefined') {
 // Only run in the browser — useGLTF.preload accesses browser-only APIs.
 if (typeof window !== 'undefined') useGLTF.preload(MODEL_URL);
 
-// Error boundary: useGLTF throws if the file 404s or fails to parse.
-// Surface that as a clear console error instead of a blank header.
+// Error boundary: useGLTF throws if the file 404s or fails to parse. Renders
+// nothing (the header shows the real model only, never a stand-in image) and
+// reports the failure to the console and the ?runnerDebug=1 panel.
 class RunnerErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -128,9 +140,11 @@ function RunnerModel({ onReady }) {
       );
       return;
     }
-    console.log(`[HeaderRunner] playing "${clipName}" looped at 0.75x (timeScale, clip untouched).`);
+    console.log(
+      `[HeaderRunner] playing "${clipName}" looped at ${ANIM_RATE}x (timeScale, clip untouched).`
+    );
     action.reset().setLoop(THREE.LoopRepeat, Infinity);
-    action.timeScale = 0.75;
+    action.timeScale = ANIM_RATE;
     action.play();
     return () => {
       action.stop();
@@ -169,16 +183,14 @@ function RunnerModel({ onReady }) {
       }
       const s = FIT_H / size.y;
       group.current.scale.setScalar(s);
-      group.current.position.set(-center.x * s, -center.y * s, -center.z * s);
+      group.current.position.set(-center.x * s, -center.y * s + V_BIAS * FIT_H, -center.z * s);
       console.log(`[HeaderRunner] auto-fit scale ${Number(s.toFixed(5))}; character centered at origin.`);
       onReady?.();
     }
   });
 
-  // The GLB carries its own embedded textures (baseColor + possibly normal),
-  // so the materials render correctly without a manual override. Keep the
-  // poster fallback pointed at the existing Image_0.png so the header is
-  // never empty while the GLB loads or if WebGL fails.
+  // The GLB carries its own embedded textures, so the materials render without
+  // a manual override and no separate image is needed anywhere in the header.
   return (
     <group ref={group}>
       {/* Mixamo rigs face +Z; the retargeted GLB's forward axis needs a visual
@@ -192,16 +204,14 @@ function RunnerModel({ onReady }) {
 }
 
 // Narrow glass-friendly strip between the wordmark and the coin chip. The
-// whole flyer translates left->right over RUN_MS, hides for GAP_MS, then
-// re-enters from the left forever. DOM-driven (rAF) so the 3D canvas only
-// plays the run cycle; canvas stays transparent over the header glass.
+// whole flyer translates left->right over CROSS_MS, hides for GAP_MS, then
+// re-enters from the left forever, and it does not start until the model has
+// reported fitted-ready. DOM-driven (rAF) so the 3D canvas only plays the run
+// cycle; canvas stays transparent over the header glass.
 export default function HeaderRunner() {
   const trackRef = useRef(null);
   const flyRef = useRef(null);
-  // True once the 3D character is fitted and rendering. Until then — and forever
-  // if WebGL/three fails — a static poster (same character pixels) travels the
-  // loop instead, so the header is never empty.
-  const [ready, setReady] = useState(false);
+  const readyRef = useRef(false);
 
   useEffect(() => {
     let alive = true;
@@ -221,24 +231,12 @@ export default function HeaderRunner() {
         console.error(`[HeaderRunner] ERROR: GLB fetch failed — likely 404 or network: ${MODEL_URL}`, e);
       }
       try {
-        const texRes = await fetch(LOCAL_TEXTURE, { method: 'HEAD' });
-        if (!alive) return;
-        console.log(`[HeaderRunner] diag poster ${texRes.status} ${LOCAL_TEXTURE} (${texRes.headers.get('content-type') || 'no-ctype'})`);
-        if (!texRes.ok) {
-          report('error', 'texture', `poster ${texRes.status} — check Image_0.png is deployed`);
-          console.error(`[HeaderRunner] ERROR: poster ${texRes.status} — check web/public/models/textures/packed/Image_0.png is deployed.`);
-        }
-      } catch (e) {
-        report('error', 'texture', `poster fetch failed: ${LOCAL_TEXTURE}`);
-        console.error(`[HeaderRunner] ERROR: poster fetch failed: ${LOCAL_TEXTURE}`, e);
-      }
-      try {
         const c = document.createElement('canvas');
         const gl = c.getContext('webgl2') || c.getContext('webgl');
         console.log(`[HeaderRunner] diag webgl: ${gl ? 'available' : 'UNAVAILABLE'}`);
         if (!gl) {
-          report('error', 'webgl', 'WebGL unavailable — 3D cannot render, poster stays');
-          console.error('[HeaderRunner] ERROR: WebGL unavailable — 3D cannot render, poster stays.');
+          report('error', 'webgl', 'WebGL unavailable — 3D cannot render');
+          console.error('[HeaderRunner] ERROR: WebGL unavailable — 3D cannot render.');
         }
       } catch (e) {
         report('error', 'webgl', 'WebGL check threw — 3D cannot render');
@@ -254,10 +252,6 @@ export default function HeaderRunner() {
     const track = trackRef.current;
     const fly = flyRef.current;
     if (!track || !fly) return;
-
-    const RUN_MS = 2600;
-    const GAP_MS = 2000;
-    const OFF = 80;
 
     const place = (x, visible) => {
       fly.style.transform = `translate3d(${x}px,-50%,0)`;
@@ -282,11 +276,16 @@ export default function HeaderRunner() {
 
     const tick = (now) => {
       if (!alive) return;
+      // readyRef gates `start` below, so the bull enters at the left edge.
+      if (!readyRef.current) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
       if (!start) start = now;
       const trackW = track.clientWidth || 0;
       const t = now - start;
-      if (t < RUN_MS) {
-        const p = t / RUN_MS;
+      if (t < CROSS_MS) {
+        const p = t / CROSS_MS;
         place(-OFF + p * (trackW + OFF * 2), true);
         raf = requestAnimationFrame(tick);
       } else {
@@ -320,18 +319,6 @@ export default function HeaderRunner() {
         className="runner-fly"
         style={DEBUG ? { width: 320, height: 180 } : undefined}
       >
-        {!ready ? (
-          <img
-            src={LOCAL_TEXTURE}
-            className="runner-poster"
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        ) : null}
         <RunnerErrorBoundary>
           <Canvas
             gl={{ alpha: true, antialias: true }}
@@ -359,7 +346,7 @@ export default function HeaderRunner() {
                 <RunnerModel
                   onReady={() => {
                     report('stage', 'fitted-ready', 'character fitted, scaled, and running');
-                    setReady(true);
+                    readyRef.current = true;
                   }}
                 />
               </Suspense>

@@ -504,12 +504,12 @@ body.signed-in .app {
 }
 
 /* 3D header runner: flex track between the wordmark and the coin chip. Fixed
-   36px height so the header never shifts; overflow hides the runner off-edge. */
+   44px height so the header never shifts; overflow hides the runner off-edge. */
 .runner-track {
   position: relative;
   flex: 1 1 auto;
   min-width: 48px;
-  height: 36px;
+  height: 44px;
   overflow: hidden;
   pointer-events: none;
 }
@@ -518,13 +518,13 @@ body.signed-in .app {
   position: absolute;
   left: 0;
   top: 50%;
-  width: 56px;
-  height: 36px;
+  width: 64px;
+  height: 44px;
   transform: translate3d(-80px, -50%, 0);
   /* Default visible: the flyer parks off-track (translate -80px, track clips
      overflow), so opacity 1 is still invisible until positioned. The rAF loop
      hides it inline during the gap pause. A zero default would stick the
-     flyer/poster hidden forever if the loop ever bails before its first tick. */
+     flyer hidden forever if the loop ever bails before its first tick. */
   opacity: 1;
   will-change: transform;
   border-radius: 12px;
@@ -539,75 +539,6 @@ body.signed-in .app {
   width: 100%;
   height: 100%;
   background: transparent;
-}
-
-/* Static poster: same bull pixels, shown inside the travelling flyer until
-   the 3D model reports ready (and forever if WebGL fails). */
-.runner-fly .runner-poster {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  opacity: 1;
-  object-fit: cover;
-  object-position: center 30%;
-  border-radius: inherit;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* Chunk-load fallback: the dynamic HeaderRunner import carries three.js, so
-   on slow networks it arrives late (or never). This pure-CSS flyer runs the
-   same 2.6 s traverse + 2 s pause loop with zero JS, then unmounts when the
-   real component loads. */
-.runner-fly-static {
-  position: absolute;
-  top: 50%;
-  left: -60px;
-  width: 56px;
-  height: 36px;
-  margin-top: -18px;
-  animation: runner-across 4.6s linear infinite;
-  pointer-events: none;
-  border-radius: 12px;
-  /* Matches .runner-fly: no backdrop behind the runner. */
-  background: none;
-}
-
-.runner-fly-static .runner-poster {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 30%;
-  border-radius: 12px;
-  pointer-events: none;
-  user-select: none;
-}
-
-@keyframes runner-across {
-  0% {
-    left: -60px;
-    opacity: 1;
-  }
-  56% {
-    left: 100%;
-    opacity: 1;
-  }
-  57%,
-  100% {
-    left: 100%;
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .runner-fly-static {
-    animation: none;
-    left: calc(50% - 28px);
-  }
 }
 
 /* Runner diagnostics panel: in-flow band directly under the sticky header, so
