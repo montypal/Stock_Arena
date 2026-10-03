@@ -6,15 +6,19 @@ import { money, shareCount, signedMoney, tone } from '../../lib/utils/format';
 //
 // rows        - holdings(entry.id)
 // tradingOpen - entry.trading_open
-export default function HoldingsCard({ rows, tradingOpen }) {
+// tier        - entry.tier, carried into every /trade link. Without it the
+//               trade screen falls back to the player's first open entry, so
+//               tapping a 100K holding could put them in the 1K league.
+export default function HoldingsCard({ rows, tradingOpen, tier }) {
   const empty = rows.length === 0;
+  const qs = tier ? `?tier=${tier}` : '';
 
   return (
     <section className="card" aria-labelledby="home-holdings-title">
       <div className="card-head">
         <h2 id="home-holdings-title">Your stocks</h2>
         {tradingOpen ? (
-          <Link href="/trade" className="btn small outline">
+          <Link href={`/trade${qs}`} className="btn small outline">
             Trade
           </Link>
         ) : null}
@@ -26,7 +30,7 @@ export default function HoldingsCard({ rows, tradingOpen }) {
             {tradingOpen ? 'Nothing yet. Pick any stocks you like — buy as much as you can afford.' : 'No stocks held.'}
           </p>
           {tradingOpen ? (
-            <Link href="/trade" className="btn primary block">
+            <Link href={`/trade${qs}`} className="btn primary block">
               Buy your first stock
             </Link>
           ) : null}
@@ -37,7 +41,7 @@ export default function HoldingsCard({ rows, tradingOpen }) {
             const gain = Number(r.value) - Number(r.cost_basis);
             return (
               <li key={r.symbol}>
-                <Link href={`/trade/${r.symbol}`} className="row">
+                <Link href={`/trade/${r.symbol}${qs}`} className="row">
                   <span className="row-main">
                     <strong>{r.symbol}</strong>
                     <span className="sub">

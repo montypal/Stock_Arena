@@ -1,61 +1,24 @@
+import Link from 'next/link';
 import { requireUser } from '../../../lib/db/auth';
-import { careerStats, pastEntries, tierInfo, holdings, summarize } from '../../../lib/trading/game';
+import { careerStats, pastEntries, tierInfo } from '../../../lib/trading/game';
+import { BUDDIES, buddyState } from '../../../lib/rewards/buddies';
+import { boardTotals, careerBoard } from '../../../lib/rewards/catalog';
+import { userAchievements } from '../../../lib/rewards/read';
+import { buyBuddy, pickBuddy } from '../../../lib/actions';
 import { money, ordinal, signedMoney, tone, weekLabel } from '../../../lib/utils/format';
-import { PageHead } from '../../../components/layout/ui';
+import { Flash, PageHead } from '../../../components/layout/ui';
+import SubmitButton from '../../../components/layout/SubmitButton';
 import CoinsCard from '../../../components/profile/CoinsCard';
 import ForgetDevice from '../../../components/auth/ForgetDevice';
-import PortfolioSummary from '../../../components/home/PortfolioSummary';
 
-const ACH_DEFS = [
-  {
-    id: 'first',
-    label: 'First battle',
-    icon: <path d="M5 21V4M5 4h11l-2.5 4L16 12H5" />,
-  },
-  {
-    id: 'podium',
-    label: 'Podium finish',
-    icon: <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3" />,
-  },
-  {
-    id: 'champion',
-    label: 'Champion',
-    icon: <path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-3-5.4 3 1.1-6L3.2 9.4l6.1-.8L12 3Z" />,
-  },
-  {
-    id: 'veteran',
-    label: '5 leagues',
-    icon: <path d="M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5" />,
-  },
-  {
-    id: 'regular',
-    label: '10 leagues',
-    icon: <path d="M12 3l1.9 4.6 5 .4-3.8 3.3 1.1 4.9L12 13.7l-4.2 2.5 1.1-4.9L5.1 8l5-.4L12 3Z" />,
-  },
-  {
-    id: 'earner',
-    label: 'Coin earner',
-    icon: <path d="M12 3a9 9 0 1 0 9 9M12 7v10M9 9.5h5M9 14.5h5" />,
-  },
-  {
-    id: 'hot',
-    label: 'Top half',
-    icon: <path d="M3 17l6-6 4 4 8-8M15 7h6v6" />,
-  },
-  {
-    id: 'loyal',
-    label: '3 podiums',
-    icon: <path d="M6 21v-7a6 6 0 0 1 12 0v7M9 21h6M12 8v4" />,
-  },
-];
-
-// Placeholder notifications (the card is labelled as such). General facts
-// about the game only, never claims about what this player did or is close
-// to doing (contextHistory.md rule 17).
-const NOTIFS = [
-  { title: 'League ends Sunday', sub: 'Trading closes Friday at 4:00 PM ET; results settle when Sunday ends.' },
-  { title: 'How achievements unlock', sub: 'Badges unlock from your finished league results.' },
-  { title: 'Market opens 9:30 AM ET', sub: 'Queued orders fill when trading resumes.' },
+// How a league week actually runs. Every line here is a rule the code
+// enforces -- the card this feeds used to claim a Friday 4:00 PM trading
+// close and queued orders, neither of which exists.
+const WEEK_FACTS = [
+  { title: 'Leagues open Monday 7:00 AM ET', sub: 'One 1K, one 10K and one 100K league a week. You can be in all three.' },
+  { title: 'Buy and sell all week', sub: 'Trading stays open until Sunday 7:00 PM ET — no Friday lock, no blackout.' },
+  { title: 'Orders go through immediately', sub: 'You get the live price at the moment the server fills it, not a queue.' },
+  { title: 'Sunday 7:00 PM ET settles the week', sub: 'Best portfolio wins. Your finishing place pays coins; achievements pay league cash.' },
 ];
 
 // Colour for a finishing place: gold / silver / bronze for the podium.
@@ -63,34 +26,20 @@ function placeTone(rank) {
   return rank === 1 ? 'p1' : rank === 2 ? 'p2' : rank === 3 ? 'p3' : '';
 }
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }) {
+  const sp = await searchParams;
   const user = await requireUser();
-  const [history, career] = await Promise.all([pastEntries(user.id), careerStats(user.id)]);
-  const wins = history.filter((e) => e.final_rank === 1).length;
-  const podiums = history.filter((e) => e.final_rank && e.final_rank <= 3).length;
-  const totalCoins = history.reduce((sum, e) => sum + Number(e.coins_awarded ?? 0), 0);
-  const topHalf = history.filter((e) => e.final_rank && e.room_size && e.final_rank <= Math.ceil(e.room_size / 2)).length;
-
-  const unlocked = {
-    first: history.length >= 1,
-    podium: podiums >= 1,
-    champion: wins >= 1,
-    veteran: history.length >= 5,
-    regular: history.length >= 10,
-    earner: totalCoins > 0,
-    hot: topHalf >= 1,
-    loyal: podiums >= 3,
-  };
-  const unlockedCount = Object.values(unlocked).filter(Boolean).length;
-
-  // Current league portfolio
-  const entry = history.length > 0 ? history[0] : null;
-  let portfolioRows = [];
-  let portfolioSummary = null;
-  if (entry) {
-    portfolioRows = await holdings(entry.id);
-    portfolioSummary = summarize(entry, portfolioRows);
-  }
+  const [history, career, buddies, earnedCareer] = await Promise.all([
+    pastEntries(user.id),
+    careerStats(user.id),
+    buddyState(user.id),
+    userAchievements(user.id),
+  ]);
+  // The real career achievements, the same eight the worker pays coins for.
+  // This card used to show eight invented badges ("Champion", "Coin earner",
+  // ...) that paid nothing and matched nothing in the game.
+  const board = careerBoard(earnedCareer);
+  const totals = boardTotals(board, 'coins');
 
   // The stats row shows full career totals (same source as Progress);
   // pastEntries() above only covers the latest 20 settled leagues.
@@ -101,43 +50,43 @@ export default async function ProfilePage() {
   return (
     <main className="acct-profile">
       <PageHead eyebrow="Profile" title={user.display_name} />
+      <Flash sp={sp} />
 
       <div className="split">
         <div className="col acct-profile-main">
+          {/* The career board itself lives on Progress; this is the summary,
+              built from the same catalogue and the same paid rows, so the two
+              screens can never disagree. */}
           <section className="card acct-ach-card">
             <div className="card-head">
-              <h2>Achievements</h2>
+              <h2>Career achievements</h2>
               <span className="caption">
-                {unlockedCount} of {ACH_DEFS.length} unlocked
+                {totals.count} of {totals.of} earned
               </span>
             </div>
             <ul className="acct-ach-grid">
-              {ACH_DEFS.map((a) => {
-                const on = unlocked[a.id];
-                return (
-                  <li key={a.id} className={on ? 'acct-ach is-on' : 'acct-ach is-off'}>
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="26"
-                      height="26"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                      focusable="false"
-                    >
-                      {a.icon}
-                    </svg>
-                    <span className="acct-ach-text">
-                      <span className="acct-ach-label">{a.label}</span>
-                      <span className="acct-ach-state">{on ? 'Unlocked' : 'Locked'}</span>
+              {board.map((a) => (
+                <li
+                  key={a.slug}
+                  className={a.earned ? 'acct-ach is-on' : 'acct-ach is-off'}
+                  title={a.how}
+                >
+                  <span className="acct-ach-text">
+                    <span className="acct-ach-label">{a.name}</span>
+                    <span className="acct-ach-state">
+                      {a.earned
+                        ? `+${a.coins.toLocaleString()} coins`
+                        : a.waiting
+                          ? `Waiting on ${a.waiting}`
+                          : `${a.coins.toLocaleString()} coins`}
                     </span>
-                  </li>
-                );
-              })}
+                  </span>
+                </li>
+              ))}
             </ul>
+            <Link href="/progress" className="btn small outline">
+              See how each one is earned
+            </Link>
           </section>
 
           <section className="card acct-history-card">
@@ -200,17 +149,76 @@ export default async function ProfilePage() {
             </dl>
           </CoinsCard>
 
-          {entry && entry.trading_open ? (
-            <PortfolioSummary entry={entry} rows={portfolioRows} summary={portfolioSummary} />
-          ) : null}
+          {/* Buddies are bought with coins, never league cash. The catalogue in
+              lib/rewards/buddies.js holds one entry per character whose model is
+              actually in the repo, so this list is never padded out. */}
+          <section className="card buddy-shop">
+            <div className="card-head">
+              <h2>Your buddy</h2>
+              <span className="caption">
+                {buddies.owned.length} of {BUDDIES.length} unlocked
+              </span>
+            </div>
+            <p className="caption">
+              Your buddy sits in the corner of Home, reacts to how your week is going, and opens
+              your stats when you tap it.
+            </p>
+            <ul className="buddy-roster">
+              {BUDDIES.map((b) => {
+                const owned = buddies.owned.includes(b.slug);
+                const active = buddies.active === b.slug;
+                return (
+                  <li key={b.slug} className={active ? 'buddy-pick is-active' : 'buddy-pick'}>
+                    <div className="buddy-pick-top">
+                      <strong>{b.name}</strong>
+                      <span className={active ? 'pill gold' : 'pill'}>
+                        {active
+                          ? 'Out with you'
+                          : owned
+                            ? 'Unlocked'
+                            : `${b.price.toLocaleString()} coins`}
+                      </span>
+                    </div>
+                    <p className="muted small">
+                      {b.species} · {b.blurb}
+                    </p>
+                    {active ? null : owned ? (
+                      <form action={pickBuddy}>
+                        <input type="hidden" name="slug" value={b.slug} />
+                        <SubmitButton className="btn small outline" pendingLabel="Switching…">
+                          Send out {b.name}
+                        </SubmitButton>
+                      </form>
+                    ) : (
+                      <form action={buyBuddy}>
+                        <input type="hidden" name="slug" value={b.slug} />
+                        <SubmitButton className="btn small primary" pendingLabel="Unlocking…">
+                          Unlock for {b.price.toLocaleString()} coins
+                        </SubmitButton>
+                      </form>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="caption">
+              More buddies arrive with their models — a character is listed here once its model is
+              in the game.
+            </p>
+          </section>
+
+          {/* A live-portfolio card used to sit here, fed from pastEntries()
+              and gated on entry.trading_open. pastEntries() only returns
+              settled leagues, where trading is closed by definition, so it
+              never rendered -- it just cost two queries a visit. The live
+              portfolio is on Home and Battles. */}
 
           <section className="card acct-notifs-card">
             <div className="card-head">
-              <h2>Notifications</h2>
-              <span className="pill">Placeholder</span>
+              <h2>How the week works</h2>
             </div>
             <ul className="acct-list">
-              {NOTIFS.map((n) => (
+              {WEEK_FACTS.map((n) => (
                 <li key={n.title} className="row">
                   <span className="row-main">
                     <strong>{n.title}</strong>

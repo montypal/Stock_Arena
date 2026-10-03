@@ -78,18 +78,21 @@ export function TradeSkeleton() {
 }
 
 export function DailySkeleton() {
+  // Matches the achievement board that replaced the old two-column feed:
+  // hero total, then a grid of ten small tiles.
   return (
-    <main aria-busy="true" aria-label="Loading daily">
+    <main aria-busy="true" aria-label="Loading this week's achievements">
       <section className="hero-card" aria-hidden="true">
         <div style={{ display: 'grid', gap: 10 }}>
           <Bar w="30%" h={16} />
           <Bar w="55%" h={26} />
         </div>
       </section>
-      <div className="grid-2">
-        <CardSkeleton lines={3} />
-        <CardSkeleton lines={3} />
-      </div>
+      <ul className="acct-board">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <CardSkeleton key={i} lines={2} />
+        ))}
+      </ul>
     </main>
   );
 }

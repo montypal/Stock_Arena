@@ -104,6 +104,24 @@ export async function entryForTier(userId, week, tier) {
   );
 }
 
+// What to put on screen for a player.
+//
+// Screens used to ask for the week a player can still JOIN, which rolls over
+// to next Monday the moment a league settles on Sunday at 19:00 ET. That made
+// a finished league disappear before the player ever saw their result, rank or
+// coins. So: the joinable week's entries when there are any, otherwise the
+// most recent week the player actually played.
+export async function entriesToShow(userId) {
+  const week = await joinableWeek();
+  const current = await entriesForWeek(userId, week);
+  if (current.length) return { week, entries: current, current: true };
+
+  const recent = await currentEntries(userId);
+  if (!recent.length) return { week, entries: [], current: true };
+  const latest = recent[0].week_start;
+  return { week, entries: recent.filter((e) => e.week_start === latest), current: false };
+}
+
 // Whether a league week (by its Monday, league opens 07:00 ET) is underway.
 export async function weekHasStarted(ws) {
   const row = await one(
@@ -165,7 +183,7 @@ export async function joinLeague(userId, tier) {
         await c.query(
           `INSERT INTO leagues (tier, week_start, starts_at, trading_closes_at, ends_at)
            VALUES ($1, $2::date,
-                   ($2::date)::timestamp + time '07:00' AT TIME ZONE 'America/New_York',
+                   (($2::date)::timestamp + time '07:00') AT TIME ZONE 'America/New_York',
                    (($2::date + 6)::timestamp + time '19:00') AT TIME ZONE 'America/New_York',
                    (($2::date + 6)::timestamp + time '19:00') AT TIME ZONE 'America/New_York')
            ON CONFLICT (tier, week_start) DO UPDATE SET tier = EXCLUDED.tier
@@ -364,6 +382,18 @@ export async function placeOrder(userId, { symbol, side, shares, amount, sellAll
 
     if (!targetEntry.trading_open) throw new GameError('Trading is closed for this league.');
 
+    // Lock this entry for the rest of the transaction. Both branches below
+    // read a balance and then write it back, so without the lock two
+    // overlapping submits -- the stock page open on two devices, or a
+    // replayed POST -- both validate against the same starting numbers: a
+    // buy can overspend into negative cash, and "sell all" can pay out twice
+    // for one position. Locking entries serializes them, because both
+    // branches update this row.
+    const cash = Number(
+      (await c.query('SELECT cash FROM entries WHERE id = $1 FOR UPDATE', [targetEntry.id]))
+        .rows[0].cash
+    );
+
     const quote = (
       await c.query(
         `SELECT lp.price FROM stocks s LEFT JOIN latest_price lp ON lp.symbol = s.symbol
@@ -380,8 +410,8 @@ export async function placeOrder(userId, { symbol, side, shares, amount, sellAll
       if (!(shares >= 1)) throw new GameError('Enter at least 1 share.');
       if (!Number.isInteger(shares)) throw new GameError('Whole shares only.');
       const estimatedAmount = Math.round(shares * quote.price * 100) / 100;
-      if (estimatedAmount > targetEntry.cash + 0.005) {
-        throw new GameError(`You have ${money(targetEntry.cash)} to spend.`);
+      if (estimatedAmount > cash + 0.005) {
+        throw new GameError(`You have ${money(cash)} to spend.`);
       }
 
       // Execute immediately: deduct cash, record position, insert filled order.
@@ -407,17 +437,22 @@ export async function placeOrder(userId, { symbol, side, shares, amount, sellAll
 
     if (side === 'sell') {
       const posResult = await c.query(
-        `SELECT shares, cost_basis FROM positions WHERE entry_id = $1 AND symbol = $2`,
+        `SELECT shares, cost_basis FROM positions WHERE entry_id = $1 AND symbol = $2 FOR UPDATE`,
         [targetEntry.id, symbol]
       );
       const pos = posResult.rows[0];
       if (!pos || pos.shares <= 0) throw new GameError(`You don't own any ${symbol}.`);
       if (sellAll) {
+        // The exact held amount, fractions included. Buys are whole shares
+        // now, but positions from the old dollar-based orders can hold a
+        // fraction, and running those through the whole-shares check below
+        // left the player unable to sell them at all.
         shares = pos.shares;
+      } else {
+        if (!(shares >= 1)) throw new GameError('Enter at least 1 share.');
+        if (!Number.isInteger(shares)) throw new GameError('Whole shares only.');
+        if (shares > pos.shares) throw new GameError(`You only own ${pos.shares} shares of ${symbol}.`);
       }
-      if (!(shares >= 1)) throw new GameError('Enter at least 1 share.');
-      if (!Number.isInteger(shares)) throw new GameError('Whole shares only.');
-      if (shares > pos.shares) throw new GameError(`You only own ${pos.shares} shares of ${symbol}.`);
 
       const estimatedAmount = Math.round(shares * quote.price * 100) / 100;
 

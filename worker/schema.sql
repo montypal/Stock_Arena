@@ -133,6 +133,26 @@ CREATE INDEX IF NOT EXISTS rooms_league ON rooms (league_id);
 -- in the same week; the new UNIQUE (user_id, league_id) allows multiple
 -- entries (different leagues) per week while preventing re-joining the
 -- same tier/league twice.
+-- The table itself was lost from this file during an earlier edit while the
+-- live database kept it, so the statements below (and positions/orders) had
+-- nothing to attach to on a fresh database. Recreated from the columns the
+-- app and worker actually read and write. IF NOT EXISTS keeps the live table
+-- untouched.
+CREATE TABLE IF NOT EXISTS entries (
+    id               BIGSERIAL PRIMARY KEY,
+    user_id          BIGINT NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
+    league_id        BIGINT NOT NULL REFERENCES leagues(id) ON DELETE CASCADE,
+    room_id          BIGINT NOT NULL REFERENCES rooms(id)   ON DELETE CASCADE,
+    week_start       DATE   NOT NULL,
+    starting_balance NUMERIC(16,4) NOT NULL,
+    cash             NUMERIC(16,4) NOT NULL,
+    joined_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- Written once, by the worker, when the league settles.
+    final_value      NUMERIC(16,4),
+    final_rank       INT,
+    coins_awarded    BIGINT NOT NULL DEFAULT 0
+);
+
 DO $$
 BEGIN
     -- Drop old unique constraint (user_id, week_start) if it exists.
@@ -198,3 +218,70 @@ CREATE INDEX IF NOT EXISTS orders_pending
     ON orders (placed_at) WHERE status = 'pending';
 CREATE INDEX IF NOT EXISTS orders_entry
     ON orders (entry_id, placed_at DESC);
+
+-- =============================================================== rewards
+-- Two currencies, never mixed (see contextHistory.md "The Two Currencies"):
+-- weekly achievements pay league cash into one entry; career achievements pay
+-- coins to the profile. Both are written only by the worker, which is the
+-- single author of everything that moves money.
+
+-- One row per entry per ET day, upserted by the worker while a league is open.
+-- The last write of a day is that day's closing state, which is what the
+-- day-based achievements (Green Open, Comeback, Podium Streak, Closer,
+-- Perfect Week) are judged on.
+CREATE TABLE IF NOT EXISTS entry_snapshots (
+    entry_id      BIGINT NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+    snapshot_date DATE   NOT NULL,              -- America/New_York calendar day
+    value         NUMERIC(16,4) NOT NULL,       -- cash + market value of holdings
+    cash          NUMERIC(16,4) NOT NULL,
+    rank          INT    NOT NULL,              -- place in the room that day
+    room_size     INT    NOT NULL,
+    positions     INT    NOT NULL,
+    -- Achievement cash paid into this entry by the time of the snapshot. It is
+    -- already inside `value` (achievements pay into entries.cash), so the
+    -- rules that ask "were you in profit" subtract it.
+    awarded       NUMERIC(16,4) NOT NULL DEFAULT 0,
+    taken_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (entry_id, snapshot_date)
+);
+
+ALTER TABLE entry_snapshots ADD COLUMN IF NOT EXISTS awarded NUMERIC(16,4) NOT NULL DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS entry_snapshots_date ON entry_snapshots (snapshot_date);
+
+-- Weekly achievements: paid in league cash, into the entry that earned them.
+-- The row is the receipt; cash was added to entries.cash in the same
+-- transaction, so a slug can only ever pay once per entry.
+CREATE TABLE IF NOT EXISTS entry_achievements (
+    entry_id   BIGINT NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+    slug       TEXT   NOT NULL,
+    cash       NUMERIC(16,4) NOT NULL,
+    awarded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (entry_id, slug)
+);
+
+CREATE INDEX IF NOT EXISTS entry_achievements_time ON entry_achievements (awarded_at DESC);
+
+-- Career achievements: paid in coins, to the profile, once per player.
+CREATE TABLE IF NOT EXISTS user_achievements (
+    user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    slug       TEXT   NOT NULL,
+    coins      BIGINT NOT NULL,
+    awarded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, slug)
+);
+
+-- =============================================================== buddies
+-- The buddy catalogue lives in code (web/lib/rewards/buddies.js), so a new
+-- character is one entry plus its .glb. The database only records what a
+-- player owns and which one is out.
+
+CREATE TABLE IF NOT EXISTS user_buddies (
+    user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    slug        TEXT   NOT NULL,
+    coins_spent BIGINT NOT NULL DEFAULT 0,
+    unlocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, slug)
+);
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS active_buddy TEXT;

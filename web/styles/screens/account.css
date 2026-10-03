@@ -58,31 +58,195 @@
   outline-offset: 2px;
 }
 
-/* ================================================================= daily */
+/* ==================================================== achievement boards */
+/* The weekly board on /daily and the career board on /progress.
+   Each achievement is its own top-level glass tile so the shared rim can
+   carry its state: .rim-ok where the award is league cash, .rim-gold where
+   it is coins. Earned tiles also take a faint wash of the same colour --
+   that is what reads as done at arm's length on a phone. Unearned tiles stay
+   plain glass with faint text, and an achievement that is waiting on an
+   unbuilt feature gets no rim at all. */
 
-.acct-article {
+.acct-board-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.acct-board-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.acct-board-head h2 {
+  font-size: clamp(22px, 6vw, 28px);
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
+}
+
+.acct-board-sub {
+  font-size: 15px;
+  color: var(--text-soft);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+
+/* the x-of-ten summary above a board */
+.acct-board-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.acct-board-sum .big-number {
+  margin-top: 2px;
+}
+
+/* league pills on /daily, for a player with more than one entry this week */
+.acct-tierpick {
+  gap: 10px;
+}
+
+.acct-tierbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.acct-board {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
-.acct-article-title {
-  font-size: 16.5px;
-  line-height: 1.35;
-  letter-spacing: 0.02em;
-}
-
-.acct-article-body {
+.glass.acct-award {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: var(--radius-md);
 }
 
-.acct-article-source {
+.acct-award-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* inner-glass lens around the achievement's icon */
+.acct-award-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--glass-sheen), var(--inner-2);
+  box-shadow: inset 0 0 0 1px var(--inner-line);
+  color: var(--text-faint);
+}
+
+.acct-award-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.acct-award-name {
   font-family: var(--display);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+.acct-award-rule {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-faint);
+}
+
+.acct-award-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.acct-award-pay {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.acct-award-value {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
+
+.acct-award-unit {
+  font-family: var(--display);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* earned: the rim colour comes from the JSX, the wash finishes the read */
+.acct-award.is-earned {
+  background:
+    var(--glass-sheen),
+    linear-gradient(180deg, rgba(108, 242, 156, 0.17), rgba(46, 224, 111, 0.05)),
+    var(--glass-tint);
+}
+
+.acct-award.is-earned.rim-gold {
+  background:
+    var(--glass-sheen),
+    linear-gradient(180deg, rgba(247, 203, 77, 0.17), rgba(247, 203, 77, 0.05)),
+    var(--glass-tint);
+}
+
+.acct-award.is-earned .acct-award-name {
+  color: var(--text);
+}
+
+.acct-award.is-earned .acct-award-icon,
+.acct-award.is-earned .acct-award-value {
   color: var(--green-hi);
+}
+
+.acct-award.is-earned.rim-gold .acct-award-icon,
+.acct-award.is-earned.rim-gold .acct-award-value {
+  color: var(--gold);
+}
+
+/* waiting on a feature that does not exist: nothing to chase, so nothing
+   is highlighted */
+.acct-award.is-waiting .acct-award-name,
+.acct-award.is-waiting .acct-award-rule,
+.acct-award.is-waiting .acct-award-value,
+.acct-award.is-waiting .acct-award-unit {
+  color: var(--text-faint);
 }
 
 /* ============================================================== coins card */
@@ -293,17 +457,18 @@
 /* ================================================================ tablet */
 
 @media (min-width: 768px) {
-  .acct-article {
-    padding: 22px;
+  /* Boards: two achievements a row, with the phone's single column gone. */
+  .acct-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
   }
 
-  .acct-article-title {
-    font-size: 17px;
+  .glass.acct-award {
+    padding: 18px;
   }
 
-  /* Progress: career and store side by side under the coins + tiles. */
-  .col.acct-pair {
-    display: grid;
+  /* Progress: coins + sources beside the tiles + career record. */
+  .acct-progress .split {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
   }
@@ -369,12 +534,9 @@
 /* =============================================================== desktop */
 
 @media (min-width: 1100px) {
-  .acct-article-title {
-    font-size: 18px;
-  }
-
-  .col.acct-pair {
-    display: flex;
+  /* Wide enough for three achievements a row. */
+  .acct-board {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   /* Profile: achievements + past leagues in the main column, coins +

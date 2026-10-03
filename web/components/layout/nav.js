@@ -9,7 +9,8 @@ const TABS = [
   { href: '/', label: 'Home', icon: 'home', match: ['/'] },
   // Trading happens inside a battle, so /trade keeps the Battles tab lit.
   { href: '/league', label: 'Battles', icon: 'battles', match: ['/league', '/trade'] },
-  { href: '/daily', label: 'Daily', icon: 'daily', match: ['/daily'] },
+  // The screen behind this tab is the week's achievement board, not a feed.
+  { href: '/daily', label: 'Rewards', icon: 'trophy', match: ['/daily'] },
   { href: '/progress', label: 'Progress', icon: 'progress', match: ['/progress'] },
   { href: '/profile', label: 'Profile', icon: 'profile', match: ['/profile'] },
 ];

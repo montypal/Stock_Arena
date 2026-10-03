@@ -2,6 +2,7 @@
 // worker -> Postgres -> web. Renders fine with no database attached yet.
 // Reachable signed in or signed out.
 
+import { query } from '../../../lib/db';
 import { PageHead } from '../../../components/layout/ui';
 
 export const dynamic = 'force-dynamic';
@@ -10,19 +11,15 @@ async function getPrices() {
   if (!process.env.DATABASE_URL) return { state: 'no-db', rows: [] };
 
   try {
-    const { Client } = await import('pg');
-    const client = new Client({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-    });
-    await client.connect();
-    const res = await client.query(
-      'SELECT symbol, price, updated_at FROM latest_price ORDER BY symbol'
-    );
-    await client.end();
-    return { state: 'ok', rows: res.rows };
+    // Shared pool, like every other screen. This page used to open its own
+    // pg Client per request, which leaked a connection on each visit.
+    const rows = await query('SELECT symbol, price, updated_at FROM latest_price ORDER BY symbol');
+    return { state: 'ok', rows };
   } catch (err) {
-    return { state: 'error', rows: [], message: err.message };
+    // The page is reachable signed out, so the raw driver message (which
+    // carries the database host and user) stays in the server log.
+    console.error('[status] price cache read failed:', err);
+    return { state: 'error', rows: [], message: 'The worker database did not answer.' };
   }
 }
 

@@ -340,3 +340,316 @@
     transform: none;
   }
 }
+
+/* ================================================================== buddy */
+/* The companion widget (components/home/BuddyWidget.js) and the buddy section
+   on Profile. Both live in this file because it is loaded on every screen and
+   the two share the same pieces.
+
+   The widget floats in the bottom-right corner. On phones the tab bar floats
+   over the bottom of the screen, so the widget is lifted a full gap clear of
+   it and the dashboard carries matching bottom padding -- nothing sits under
+   the widget, and the widget sits under nothing.
+
+   The canvas is deliberately taller than its glass box and nothing here clips
+   overflow: the character stands inside the box and a jump crests the top of
+   it. Only the box is a pointer target, so the page behind the tall canvas
+   stays clickable (the canvas itself is pointer-events: none). */
+
+.buddy-widget {
+  position: fixed;
+  /* Over the page, under the sticky header and the tab bar (both 30). */
+  z-index: 25;
+  right: var(--gutter);
+  bottom: calc(var(--tabbar-h) + var(--tabbar-gap) * 2 + env(safe-area-inset-bottom));
+  width: 112px;
+}
+
+/* Glass comes from the shared .glass class in the JSX; this is shape only. */
+.buddy-launcher {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 128px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.45s var(--spring);
+}
+
+@media (hover: hover) {
+  .buddy-launcher:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.buddy-launcher:active {
+  transform: scale(0.94);
+  transition-duration: 0.12s;
+}
+
+.buddy-stage {
+  position: absolute;
+  display: block;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 260px;
+  pointer-events: none;
+}
+
+.buddy-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+/* This week's change, under the character's feet. */
+.buddy-tag {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 7px;
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.buddy-tag.flat {
+  color: var(--text-faint);
+}
+
+/* Anchored above the widget, so the buddy stays in view while you read it.
+   `top` matters as much as `bottom`: the panel used to grow upward unbounded
+   and on a 375x667 screen its own head -- the buddy's name and the Close
+   button -- ended up behind the sticky header, which has a higher z-index and
+   swallows the clicks. Pinning both edges caps it at the real free space. */
+.buddy-panel {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: calc(100% + 12px);
+  top: auto;
+  max-height: calc(100vh - var(--tabbar-h) - var(--header-h) - 72px);
+  width: min(84vw, 330px);
+  gap: 12px;
+  padding: 16px;
+  text-align: left;
+}
+
+/* Everything under the panel's head scrolls, so the head and its Close button
+   stay put -- and so the card's glass rim stays with the frame. */
+.buddy-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* The panel is capped, so the scroller takes what is left rather than a
+     fixed slice of the viewport: min-height 0 is what lets it shrink inside
+     the flex column instead of pushing the head off the top. */
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Sized by viewport width, this would outgrow the panel. */
+.buddy-panel .big-number {
+  font-size: clamp(26px, 7.5vw, 34px);
+}
+
+.buddy-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.buddy-movers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.buddy-ticks {
+  list-style: none;
+  padding: 0;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.buddy-ticks li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.buddy-ticks li > span:first-child {
+  font-family: var(--display);
+  font-weight: 700;
+}
+
+/* One column per daily snapshot: real days only, so a league that has run two
+   days shows two columns. */
+.buddy-trend {
+  list-style: none;
+  padding: 0;
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.buddy-trend-day {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+
+.buddy-trend-track {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 56px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 0 1px var(--inner-line);
+}
+
+.buddy-trend-bar {
+  display: block;
+  width: 100%;
+  min-height: 4px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(140, 247, 180, 0.95), rgba(26, 168, 83, 0.8));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.buddy-trend-bar.down {
+  background: linear-gradient(180deg, rgba(255, 170, 160, 0.95), rgba(198, 74, 62, 0.8));
+}
+
+.buddy-trend-bar.flat {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.18));
+}
+
+.buddy-trend-label {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--display);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Keeps the last card clear of the floating widget. */
+main.home-dash {
+  padding-bottom: 88px;
+}
+
+/* ------------------------------------------- the buddy section on Profile */
+
+.buddy-roster {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.buddy-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--inner);
+  box-shadow: inset 0 0 0 1px var(--inner-line);
+}
+
+.buddy-pick.is-active {
+  background: var(--inner-2);
+  box-shadow: inset 0 0 0 1px var(--edge);
+}
+
+.buddy-pick-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.buddy-pick-top strong {
+  font-family: var(--display);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+@media (min-width: 768px) {
+  .buddy-widget {
+    width: 124px;
+  }
+
+  .buddy-launcher {
+    height: 140px;
+  }
+
+  .buddy-stage {
+    height: 285px;
+  }
+
+  .buddy-panel {
+    width: 340px;
+  }
+}
+
+@media (min-width: 1100px) {
+  /* The tab bar is a left rail at this width, so the corner is free. */
+  .buddy-widget {
+    right: 28px;
+    bottom: 28px;
+    width: 140px;
+  }
+
+  .buddy-launcher {
+    height: 156px;
+  }
+
+  .buddy-stage {
+    height: 318px;
+  }
+
+  .buddy-panel {
+    width: 372px;
+  }
+
+  .buddy-scroll {
+    max-height: min(60vh, 520px);
+  }
+
+  main.home-dash {
+    padding-bottom: 104px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buddy-launcher {
+    transition: none;
+  }
+
+  .buddy-launcher:hover,
+  .buddy-launcher:active {
+    transform: none;
+  }
+}

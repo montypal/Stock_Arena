@@ -5,7 +5,10 @@ Long-lived Railway process. Every cycle during market hours it:
 
   1. polls quotes for every active stock and writes them to Postgres,
   2. fills pending orders at those fresh prices (forward pricing, see game.py),
-  3. settles any league whose week has ended.
+  3. snapshots where every live entry stands today and pays any weekly
+     achievement that has come true (league cash),
+  4. settles any league whose week has ended, paying placement coins and any
+     career achievement that league completed.
 
 Outside market hours it only settles leagues and fills in prices for stocks
 that have never had one, so the app has something to show. Nothing in the app
@@ -204,6 +207,18 @@ def connect():
     return conn
 
 
+def rewards_cycle(conn):
+    """Record today's standings, then pay any weekly achievement that has
+    come true. Runs whether or not the market is open: several achievements
+    (Green Open, Conviction, Closer) are only decidable once a day has ended,
+    and a day can end while the market is shut.
+
+    Snapshots first -- the day-based rules read them.
+    """
+    game.write_snapshots(conn, log)
+    game.award_weekly_achievements(conn, log)
+
+
 def open_cycle(conn):
     symbols = game.active_symbols(conn)
     quotes = poll(conn, symbols)
@@ -214,6 +229,7 @@ def open_cycle(conn):
     else:
         log("no quotes this cycle")
     backfill_profiles(conn)
+    rewards_cycle(conn)
     game.settle_due_leagues(conn, log)
 
 
@@ -224,7 +240,11 @@ def closed_cycle(conn):
     placed while the market is closed fills at the next open, the same way a
     real brokerage handles it.
     """
+    rewards_cycle(conn)
     game.settle_due_leagues(conn, log)
+    # Sunday's settlement happens while the market is shut, so this is the
+    # cycle that catches any career coins a crashed settlement never paid.
+    game.award_career_catchup(conn, log)
     backfill_profiles(conn)
     missing = game.symbols_missing_prices(conn)
     if missing:

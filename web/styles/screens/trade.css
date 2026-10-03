@@ -1,9 +1,9 @@
 /* ==========================================================================
-   Trade screen: /trade (search + stock list) and /trade/[symbol] (quote,
-   position, buy/sell forms, pending orders). Owned by the trade screen;
-   shared pieces (glass, cards, pills, fields, buttons) live in
-   app/globals.css. Mobile first, then 768px (tablet) and 1100px (desktop
-   with nav rail).
+   Trade screen: /trade (wallet strip + your stocks + the stock list) and
+   /trade/[symbol] (one ticket card: price, your cash, your position, and the
+   buy/sell controls). Owned by the trade screen; shared pieces (glass,
+   cards, pills, fields, buttons) live in app/globals.css. Mobile first, then
+   768px (tablet) and 1100px (desktop with nav rail).
    Liquid glass: top-level boxes are glass through shared classes (.card,
    .hero-card, .flash, .glass); everything nested inside them is clear inner
    glass (--inner / --inner-2 / --inner-line). Glass has no border, so state
@@ -69,18 +69,170 @@
   box-shadow: none;
 }
 
-.trade-count {
-  padding: 0 8px;
-  color: var(--text-soft);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7); /* sits on the moving gradient */
-  overflow-wrap: anywhere;
+.trade-note {
+  line-height: 1.5;
 }
 
-.trade-count a,
 .trade-note a,
 .trade-empty a {
   color: var(--green-hi);
   font-weight: 700;
+}
+
+/* ------------------------------------------------ /trade: league picker */
+
+.trade-tiers {
+  gap: 10px;
+}
+
+.trade-tiers-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ------------------------------------- /trade: wallet strip + holdings */
+/* The first thing a player sees: money left, what the portfolio is worth,
+   profit, and the stocks they own. Cells are inner glass inside the card. */
+
+/* Phones: one money row per line, label left and number right, so even a
+   100K balance never wraps. Tablets turn each row into a tile. */
+.trade-wallet-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.trade-wallet-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  background: var(--inner);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px var(--inner-line);
+}
+
+.trade-wallet-label {
+  font-family: var(--display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.trade-wallet-figure {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.trade-wallet-value {
+  font-family: var(--display);
+  font-size: clamp(18px, 5vw, 24px);
+  font-weight: 800;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.trade-wallet-sub {
+  font-family: var(--display);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
+
+.trade-mine {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trade-mine-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'sym value'
+    'shares gain';
+  align-items: center;
+  gap: 2px 12px;
+  padding: 11px 13px;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-decoration: none;
+  background: var(--inner);
+  box-shadow: inset 0 0 0 1px var(--inner-line);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.2s ease,
+    transform 0.45s var(--spring);
+}
+
+@media (hover: hover) {
+  .trade-mine-row:hover {
+    background-color: var(--inner-2);
+  }
+}
+
+.trade-mine-row:active {
+  background-color: var(--inner-2);
+  transform: scale(0.985);
+  transition-duration: 0.12s;
+}
+
+.trade-mine-row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(108, 242, 156, 0.85);
+}
+
+.trade-mine-sym {
+  grid-area: sym;
+  min-width: 0;
+  font-family: var(--display);
+  font-size: 14.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.trade-mine-shares {
+  grid-area: shares;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.trade-mine-value {
+  grid-area: value;
+  justify-self: end;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-mine-gain {
+  grid-area: gain;
+  justify-self: end;
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-mine-empty {
+  line-height: 1.5;
 }
 
 /* --------------------------------------------------- /trade: stock list */
@@ -137,13 +289,31 @@
   box-shadow: inset 0 0 0 2px rgba(108, 242, 156, 0.85);
 }
 
-.trade-stock-sym {
+/* Symbol plus, when the player holds it, how many shares they own. */
+.trade-stock-id {
   grid-area: sym;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.trade-stock-sym {
   min-width: 0;
   font-family: var(--display);
   font-size: 15.5px;
   font-weight: 800;
   letter-spacing: 0.08em;
+}
+
+.trade-own {
+  padding: 3px 9px;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: var(--green-hi);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 0 0 1px rgba(140, 245, 185, 0.45);
 }
 
 .trade-stock-name {
@@ -203,49 +373,44 @@
   padding: 14px 20px;
 }
 
-/* ------------------------------------------------ /trade/[symbol]: quote */
+/* ----------------------------------------- /trade/[symbol]: the ticket */
 
 .trade-back {
   align-self: flex-start;
 }
 
-.trade-quote {
-  gap: 14px;
+.trade-ticket {
+  gap: 16px;
 }
 
-.trade-quote-id {
+.trade-ticket-id {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
 }
 
-.trade-quote h1 {
+.trade-ticket h1 {
   font-size: clamp(22px, 6.4vw, 30px);
   font-weight: 900;
   line-height: 1.1;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
-.trade-quote-price {
+.trade-ticket-numbers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.trade-ticket-cell {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-}
-
-.trade-quote-price .caption {
-  margin-top: 4px;
-}
-
-/* Position stats: an inner-glass panel inside the glass card (the card gap
-   already spaces it from the heading). */
-.trade-position .stats {
-  margin-top: 0;
   padding: 14px 16px;
-  border-top: 0;
   border-radius: var(--radius-md);
   background: var(--inner);
   box-shadow:
@@ -253,79 +418,133 @@
     inset 0 0 0 1px var(--inner-line);
 }
 
-/* ------------------------------------------ /trade/[symbol]: order forms */
-
-/* The wrapper is a direct <span> of .field, so reset the caption styling
-   globals.css gives those spans. */
-.field > .trade-money {
-  position: relative;
-  display: block;
+.trade-ticket-label {
   font-family: var(--display);
-  font-size: 20px;
-  letter-spacing: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Your position, in one sentence. */
+.trade-ticket-own {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(46, 224, 111, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(140, 245, 185, 0.4);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.trade-ticket-own strong {
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-ticket-note {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--inner);
+  box-shadow: inset 0 0 0 1px var(--inner-line);
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.trade-ticket-note a {
+  color: var(--green-hi);
+  font-weight: 700;
+}
+
+/* ------------------------------ /trade/[symbol]: buy / sell controls */
+
+.trade-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* - N + Max: an inner-glass well with a big tabular count in the middle. */
+.field > .trade-stepper {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--inner);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px var(--inner-line);
+}
+
+.stepper-btn {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--glass-sheen), var(--glass-tint);
+  box-shadow: var(--glass-inset), var(--glass-shadow);
+  color: var(--green-hi);
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.12s var(--ease-out);
+}
+
+.stepper-btn:active {
+  transform: scale(0.92);
+}
+
+.stepper-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* A 100K-league count can be five digits. The number inherits the field
+   label's letter-spacing and uppercasing, which pushed it past its grid
+   column and under the +/- buttons at 375px, so both are reset and the
+   column is allowed to shrink. */
+.stepper-value {
+  min-width: 0;
+  justify-self: stretch;
+  text-align: center;
+  font-family: var(--display);
+  font-size: clamp(20px, 6vw, 30px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
   text-transform: none;
   color: var(--text);
 }
 
-.trade-money-sign {
-  position: absolute;
-  top: 50%;
-  left: 18px;
-  z-index: 1;
-  translate: 0 -50%;
-  font-family: var(--display);
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--green-hi);
-  pointer-events: none;
+.trade-max {
+  min-height: 44px;
 }
 
-/* Borderless inner well; focus ring comes from the shared input:focus
-   box-shadow in globals.css. */
-.trade-money input {
-  -moz-appearance: textfield;
-  appearance: textfield;
-  display: block;
-  padding-left: 42px;
-  font-family: var(--display);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  font-variant-numeric: tabular-nums;
+/* The buy button carries the total, so give it room for a long number. */
+.trade-go {
+  min-height: 58px;
+  font-size: 16px;
 }
 
-.trade-money input::-webkit-outer-spin-button,
-.trade-money input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+.trade-sell-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
 }
 
-.trade-note {
-  line-height: 1.5;
-}
+/* --------------------------------- /trade/[symbol]: about the company */
 
-/* Pending orders: each order is an inner-glass row inside the glass card. */
-.trade-pending .rows {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.trade-pending .rows > li + li {
-  border-top: 0;
-}
-
-.trade-pending .row {
-  padding: 10px 10px 10px 16px;
-  border-radius: var(--radius-md);
-  background: var(--inner);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 0 0 1px var(--inner-line);
-}
-
-.trade-pending .row form {
-  flex: none;
+.trade-desc {
+  line-height: 1.6;
 }
 
 /* ================================================================ tablet */
@@ -337,6 +556,29 @@
     grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
     align-items: end;
     gap: 20px 28px;
+  }
+
+  .trade-wallet-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .trade-wallet-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px 14px;
+  }
+
+  .trade-wallet-figure {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .trade-mine {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   /* Stock list becomes a 2-column grid of inner-glass tiles inside the
@@ -403,32 +645,22 @@
     padding: 6px;
   }
 
-  /* Quote card: name left, price right. */
-  .trade-quote {
-    flex-direction: row;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 24px;
-  }
-
-  .trade-quote-price {
-    flex: none;
-    align-items: flex-end;
-    text-align: right;
-  }
-
-  .trade-quote .big-number {
-    font-size: 46px;
-  }
-
-  /* Buy and sell side by side; pending orders span both. */
-  .col.trade-actions-sell {
-    display: grid;
+  /* Ticket: price and cash side by side, sell buttons side by side. */
+  .trade-ticket-numbers {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .trade-actions-sell > .trade-pending {
-    grid-column: 1 / -1;
+  /* Keep the stepper from stretching the full card width. */
+  .field > .trade-stepper {
+    max-width: 440px;
+  }
+
+  .trade-ticket .big-number {
+    font-size: 40px;
+  }
+
+  .trade-sell-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -473,18 +705,16 @@
     gap: 14px;
   }
 
-  /* .split puts the quote + position on the left and the order column on
-     the right, so the order cards stack again. */
-  .col.trade-actions-sell {
-    display: flex;
+  .trade-mine {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .trade-quote {
+  .trade-ticket {
     padding: 28px 26px;
   }
 
-  .trade-quote .big-number {
-    font-size: 52px;
+  .trade-ticket .big-number {
+    font-size: 46px;
   }
 }
 
@@ -492,12 +722,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   .trade-stock,
-  .trade-search-field {
+  .trade-search-field,
+  .trade-mine-row {
     transition: none;
   }
 
   .trade-stock:hover,
-  .trade-stock:active {
+  .trade-stock:active,
+  .trade-mine-row:active {
     transform: none;
   }
 }
@@ -535,67 +767,4 @@
 
 .trade-sort option {
   color: #06130c;
-}
-
-/* --------------------------------------- share stepper (/trade/[symbol]) */
-
-/* - N + stepper: an inner-glass well with a big tabular count between two
-   round buttons. */
-.field > .trade-stepper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  background: var(--inner);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 0 0 1px var(--inner-line);
-}
-
-.stepper-btn {
-  flex: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 0;
-  background: var(--glass-sheen), var(--glass-tint);
-  box-shadow: var(--glass-inset), var(--glass-shadow);
-  color: var(--green-hi);
-  font-family: var(--display);
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-  transition: transform 0.12s var(--ease-out);
-}
-
-.stepper-btn:active {
-  transform: scale(0.92);
-}
-
-.stepper-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.stepper-value {
-  font-family: var(--display);
-  font-size: 32px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-
-/* --------------------------------- company description (/trade/[symbol]) */
-
-.trade-desc {
-  margin-top: 10px;
-  line-height: 1.55;
-}
-
-.trade-industry {
-  margin-top: 6px;
 }

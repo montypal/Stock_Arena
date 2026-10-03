@@ -13,6 +13,7 @@ import {
   verifyPassword,
 } from './db/auth';
 import { GameError, cancelOrder, joinLeague, marketOpen, placeOrder, tierInfo } from './trading/game';
+import { buddy, setActiveBuddy, unlockBuddy } from './rewards/buddies';
 
 // Every action redirects back with a message in the query string. redirect()
 // works by throwing, so it's always called outside try/catch blocks.
@@ -193,7 +194,13 @@ export async function trade(formData) {
     return;
   }
 
-  redirect(to(back, 'ok', `Order executed — ${side === 'buy' ? `Bought` : `Sold`} ${shares} ${symbol}.`));
+  // "Sell all" posts no share count of its own -- placeOrder reads the held
+  // amount off the position -- so interpolating `shares` here used to confirm
+  // "Sold NaN AAPL". Say what actually happened instead.
+  const did = sellAll
+    ? `Sold all your ${symbol}`
+    : `${side === 'buy' ? 'Bought' : 'Sold'} ${shares} ${symbol}`;
+  redirect(to(back, 'ok', `Order executed — ${did}.`));
 }
 
 export async function cancel(formData) {
@@ -211,4 +218,51 @@ export async function cancel(formData) {
   if (error) redirect(to(back, 'error', error));
 
   redirect(to(back, 'ok', 'Order cancelled.'));
+}
+
+// ----------------------------------------------------------------- buddies
+// Buddies cost coins, never league cash. The buddy table and users.active_buddy
+// come from worker/schema.sql, which the worker applies when it starts, so
+// Vercel can be live first: 42P01 undefined_table, 42703 undefined_column.
+
+function buddyMessage(err) {
+  if (err.code === '42P01' || err.code === '42703') {
+    return 'Buddies are finishing an update. Try again in a minute.';
+  }
+  return playerMessage(err);
+}
+
+export async function pickBuddy(formData) {
+  const user = await userOrLogin();
+  const slug = String(formData.get('slug') ?? '');
+
+  let error = null;
+  try {
+    await setActiveBuddy(user.id, slug);
+  } catch (err) {
+    error = buddyMessage(err);
+  }
+  if (error) redirect(to('/profile', 'error', error));
+
+  redirect(to('/profile', 'ok', `${buddy(slug)?.name ?? 'Your buddy'} is out with you now.`));
+}
+
+export async function buyBuddy(formData) {
+  const user = await userOrLogin();
+  const slug = String(formData.get('slug') ?? '');
+
+  let error = null;
+  let already = false;
+  try {
+    const result = await unlockBuddy(user.id, slug);
+    already = Boolean(result?.already);
+  } catch (err) {
+    error = buddyMessage(err);
+  }
+  if (error) redirect(to('/profile', 'error', error));
+
+  const name = buddy(slug)?.name ?? 'Your buddy';
+  redirect(
+    to('/profile', 'ok', already ? `${name} is already yours, and out with you now.` : `${name} unlocked.`)
+  );
 }

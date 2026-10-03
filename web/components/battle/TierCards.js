@@ -47,7 +47,14 @@ export default function TierCards({ week, live, level = 2, tiers, joinedTiers })
               </li>
               <li className="prize-breakdown">
                 <Icon name="chart" size={16} strokeWidth={2} />
-                2nd {(350 * t.multiplier)} · 3rd {(250 * t.multiplier)} · top half {(100 * t.multiplier)} · finish {(50 * t.multiplier)} coins
+                2nd {350 * t.multiplier} · 3rd {250 * t.multiplier} · top half {100 * t.multiplier} ·
+                {' '}finish {50 * t.multiplier} coins
+              </li>
+              <li className="prize-breakdown">
+                <Icon name="chart" size={16} strokeWidth={2} />
+                {/* coin_payout() in worker/game.py pays nothing to an entry
+                    with no filled order, so the breakdown above needs this. */}
+                Buy at least one stock to place — no trades, no coins
               </li>
               <li className="free-entry">
                 <Icon name="zap" size={16} strokeWidth={2} />

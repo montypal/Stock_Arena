@@ -3,13 +3,13 @@ import { Suspense } from 'react';
 import { requireUser } from '../../../lib/db/auth';
 import {
   TIERS,
-  entriesForWeek,
+  entriesToShow,
   holdings,
-  joinableWeek,
   leaderboard,
   summarize,
   weekHasStarted,
 } from '../../../lib/trading/game';
+import { entryAchievementCash } from '../../../lib/rewards/read';
 import { first } from '../../../lib/utils/format';
 import { ordinal, weekRange } from '../../../lib/utils/format';
 import AutoRefresh from '../../../components/layout/refresh';
@@ -23,8 +23,9 @@ import Icon from '../../../components/layout/icons';
 export default async function LeaguePage({ searchParams }) {
   const sp = await searchParams;
   const user = await requireUser();
-  const ws = await joinableWeek();
-  const entries = await entriesForWeek(user.id, ws);
+  // `current` is false when the only entries left to show are last week's,
+  // because this week's leagues have not been joined yet.
+  const { week: ws, entries, current } = await entriesToShow(user.id);
   const live = await weekHasStarted(ws);
 
   if (entries.length === 0) {
@@ -42,7 +43,8 @@ export default async function LeaguePage({ searchParams }) {
   let selectedEntry = selectedTier ? entries.find((e) => Number(e.tier) === selectedTier) : null;
   if (!selectedEntry) selectedEntry = entries[0];
 
-  const joinedTiers = new Set(entries.map((e) => Number(e.tier)));
+  // Last week's entries are history, so every tier is still open to join.
+  const joinedTiers = new Set(current ? entries.map((e) => Number(e.tier)) : []);
   const remaining = TIERS.filter((t) => !joinedTiers.has(t.tier));
   const showSwitcher = entries.length > 1;
 
@@ -90,7 +92,11 @@ export default async function LeaguePage({ searchParams }) {
 }
 
 async function LeagueDetail({ entry, remaining, ws, live }) {
-  const [rows, board] = await Promise.all([holdings(entry.id), leaderboard(entry.room_id)]);
+  const [rows, board, achievementCash] = await Promise.all([
+    holdings(entry.id),
+    leaderboard(entry.room_id),
+    entryAchievementCash(entry.id),
+  ]);
   const summary = summarize(entry, rows);
   const settled = entry.league_status === 'settled';
   const place = board.findIndex((r) => r.entry_id === entry.id) + 1;
@@ -102,7 +108,12 @@ async function LeagueDetail({ entry, remaining, ws, live }) {
       <div className="battle-league">
         <div className="battle-aside">
           <StandingCard entry={entry} summary={summary} place={place} total={board.length} />
-          <PortfolioSummary entry={entry} rows={rows} summary={summary} />
+          <PortfolioSummary
+            entry={entry}
+            rows={rows}
+            summary={summary}
+            achievementCash={achievementCash}
+          />
           {settled ? (
             <p className="glass rim-gold battle-final" role="status">
               <Icon name="trophy" size={22} strokeWidth={2} />
@@ -119,6 +130,10 @@ async function LeagueDetail({ entry, remaining, ws, live }) {
               Trade
             </Link>
           ) : null}
+          <Link href={`/daily?tier=${entry.tier}`} className="btn outline block">
+            <Icon name="trophy" size={20} strokeWidth={2.2} />
+            This week&apos;s achievements
+          </Link>
         </div>
         <LeagueBoard board={board} entry={entry} canStillFill={true} />
       </div>

@@ -1,23 +1,23 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '../../../../lib/db/auth';
-import { entriesForWeek, holdings, joinableWeek, leaderboard, marketOpen, stock, summarize, tradeLimits } from '../../../../lib/trading/game';
-import { first } from '../../../../lib/utils/format';
-import { money, pct, shareCount, timeET } from '../../../../lib/utils/format';
-import { cancel, trade } from '../../../../lib/actions';
+import { entriesForWeek, holdings, joinableWeek, marketOpen, stock, tierInfo, tradeLimits } from '../../../../lib/trading/game';
+import { first, money, pct, shareCount, timeET, tone } from '../../../../lib/utils/format';
+import { trade } from '../../../../lib/actions';
 import AutoRefresh from '../../../../components/layout/refresh';
 import Icon from '../../../../components/layout/icons';
-import SubmitButton from '../../../../components/layout/SubmitButton';
 import { Flash } from '../../../../components/layout/ui';
-import PortfolioSummary from '../../../../components/home/PortfolioSummary';
-import ShareStepper from '../../../../components/trade/ShareStepper';
-import BuySharesForm from '../../../../components/trade/BuySharesForm';
+import TierPicker from '../../../../components/trade/TierPicker';
+import TradeControls from '../../../../components/trade/TradeControls';
 import { changeTone, dayChange } from '../../../../components/trade/change';
 
 export default async function StockPage({ params, searchParams }) {
   const [{ symbol: raw }, sp] = await Promise.all([params, searchParams]);
   const user = await requireUser();
-  const symbol = decodeURIComponent(raw).toUpperCase();
+  // Next already decodes route params, so decoding again threw URIError on
+  // anything containing a stray percent (/trade/%25) and 500'd the page.
+  // Sanitising to the ticker alphabet instead turns junk into a clean 404.
+  const symbol = String(raw).toUpperCase().replace(/[^A-Z.]/g, '');
 
   const s = await stock(symbol);
   if (!s) notFound();
@@ -31,157 +31,117 @@ export default async function StockPage({ params, searchParams }) {
     entry = wanted ? entries.find((e) => Number(e.tier) === wanted) : null;
     if (!entry) entry = entries.find((e) => e.trading_open) || entries[0];
   }
-  const showPicker = entries.length > 1;
 
   const [limits, rows] = entry
     ? await Promise.all([tradeLimits(entry, symbol), holdings(entry.id)])
     : [null, []];
-  // No entry when the player hasn't joined a league this week; summarize()
-  // reads entry.cash, so it can't be called with null.
-  const summary = entry ? summarize(entry, rows) : null;
-  const board = await leaderboard(entry?.room_id ?? 0);
-  const place = entry ? board.findIndex((r) => r.entry_id === entry.id) + 1 : 0;
+  // holdings() carries the cost basis tradeLimits() doesn't, which is what
+  // turns the position into an up/down number.
+  const pos = rows.find((r) => r.symbol === symbol) ?? null;
+  const gain = pos ? (Number(pos.value) || 0) - (Number(pos.cost_basis) || 0) : 0;
+  const held = limits ? limits.shares : 0;
   const change = dayChange(s);
-  const canTrade = entry?.trading_open && s.price != null;
-  const holding = Boolean(limits && limits.shares > 0);
-  const canSell = canTrade && holding;
-  const back = `/trade/${symbol}${entry ? `?tier=${entry.tier}` : ''}`;
+  const info = entry ? tierInfo(entry.tier) : null;
+  const canTrade = Boolean(entry?.trading_open) && s.price != null;
 
   return (
     <main className="trade-detail">
       <AutoRefresh seconds={30} />
-      <Link href="/trade" className="btn small outline trade-back">
+      <Link href={entry ? `/trade?tier=${entry.tier}` : '/trade'} className="btn small outline trade-back">
         <Icon name="back" size={16} strokeWidth={2.2} />
         All stocks
       </Link>
 
-      {showPicker ? (
-        <div className="card" style={{ marginBottom: 12 }}>
-          <p className="eyebrow" style={{ marginBottom: 8 }}>
-            Trading in
-          </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {entries.map((e) => {
-              const isSelected = Number(e.tier) === Number(entry.tier);
-              return (
-                <Link
-                  key={e.tier}
-                  href={`/trade/${symbol}?tier=${e.tier}`}
-                  className={isSelected ? 'pill blue' : 'pill'}
-                  aria-current={isSelected ? 'page' : undefined}
-                >
-                  {e.tier === 1000 ? '1K' : e.tier === 10000 ? '10K' : '100K'}
-                  {e.trading_open ? '' : ' · closed'}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+      {entries.length > 1 ? (
+        <TierPicker entries={entries} tier={entry?.tier} path={`/trade/${symbol}`} />
       ) : null}
 
-      <div className="split">
-        <div className="col">
-          <header className="hero-card trade-quote">
-            <div className="trade-quote-id">
-              <p className="eyebrow">{s.symbol}</p>
-              <h1>{s.name}</h1>
-            </div>
-            <div className="trade-quote-price">
-              <p className="big-number">{s.price != null ? money(s.price) : '—'}</p>
-              {change != null ? (
-                <p className={`delta ${changeTone(change)}`}>
-                  {pct(change)} <span>today</span>
-                </p>
-              ) : null}
-              {s.updated_at ? <p className="caption">Updated {timeET(s.updated_at)} ET</p> : null}
-              {s.description ? <p className="caption trade-desc">{s.description}</p> : null}
-              {s.industry && <p className="caption trade-industry">{s.industry}</p>}
-            </div>
-          </header>
+      <Flash sp={sp} />
 
-          <Flash sp={sp} />
+      {/* One ticket: the price, the money, the position, and the buttons. */}
+      <section className="hero-card trade-ticket">
+        <div className="trade-ticket-id">
+          <p className="eyebrow">{s.symbol}</p>
+          <h1>{s.name}</h1>
+        </div>
 
-          {holding ? (
-            <section className="card trade-position">
-              <div className="card-head">
-                <h2>Your position</h2>
-                {entry ? <span className="pill">{entry.tier === 1000 ? '1K' : entry.tier === 10000 ? '10K' : '100K'}</span> : null}
-              </div>
-              <dl className="stats">
-                <div>
-                  <dt>Shares</dt>
-                  <dd>{shareCount(limits.shares)}</dd>
-                </div>
-                <div>
-                  <dt>Value</dt>
-                  <dd>{money(limits.positionValue)}</dd>
-                </div>
-                <div>
-                  <dt>Of portfolio</dt>
-                  <dd>{pct(limits.positionValue / limits.portfolio).replace('+', '')}</dd>
-                </div>
-              </dl>
-            </section>
+        <div className="trade-ticket-numbers">
+          <div className="trade-ticket-cell">
+            <span className="trade-ticket-label">Price</span>
+            <p className="big-number">{s.price != null ? money(s.price) : '—'}</p>
+            {change != null ? (
+              <p className={`delta ${changeTone(change)}`}>
+                {pct(change)} <span>today</span>
+              </p>
+            ) : null}
+            {s.updated_at ? <p className="caption">Updated {timeET(s.updated_at)} ET</p> : null}
+          </div>
+          {entry ? (
+            <div className="trade-ticket-cell">
+              <span className="trade-ticket-label">Your cash to spend</span>
+              <p className="big-number">{money(limits.available)}</p>
+              <p className="caption">{info ? `${info.short} league money` : 'League money'}</p>
+            </div>
           ) : null}
         </div>
 
-        <aside className="col">
-          {entry && summary ? (
-            <PortfolioSummary entry={entry} rows={rows} summary={summary} />
-          ) : null}
-          {canTrade ? (
-            <section className="card trade-buy">
-              <div className="card-head">
-                <h2>Buy</h2>
-              </div>
-              <form action={trade} className="stack">
-                <input type="hidden" name="symbol" value={symbol} />
-                <input type="hidden" name="side" value="buy" />
-                {entry ? <input type="hidden" name="entry_id" value={String(entry.id)} /> : null}
-                {entry ? <input type="hidden" name="tier" value={String(entry.tier)} /> : null}
-                <BuySharesForm symbol={symbol} price={Number(s.price)} available={limits.available} maxShares={limits.maxShares} />
-                <SubmitButton className="btn primary block" pendingLabel="Placing order…">
-                  Buy {symbol}
-                </SubmitButton>
-              </form>
-            </section>
-          ) : null}
+        {held > 0 ? (
+          <p className="trade-ticket-own">
+            You own <strong>{shareCount(held)}</strong> {held === 1 ? 'share' : 'shares'}, worth{' '}
+            <strong>{money(limits.positionValue)}</strong>,{' '}
+            <span className={tone(gain)}>
+              {gain < 0 ? 'down' : 'up'} {money(Math.abs(gain))}
+            </span>{' '}
+            since you bought.
+          </p>
+        ) : null}
 
-          {canSell ? (
-            <section className="card trade-sell">
-              <div className="card-head">
-                <h2>Sell</h2>
-              </div>
-              <form action={trade} className="stack">
-                <input type="hidden" name="symbol" value={symbol} />
-                <input type="hidden" name="side" value="sell" />
-                {entry ? <input type="hidden" name="entry_id" value={String(entry.id)} /> : null}
-                {entry ? <input type="hidden" name="tier" value={String(entry.tier)} /> : null}
-                <ShareStepper min={0} max={limits.shares} defaultValue={limits.shares} hint={`You own ${limits.shares} shares. Use Sell all to sell everything.`} />
-                <SubmitButton className="btn outline block" pendingLabel="Placing order…">
-                  Place sell order
-                </SubmitButton>
-              </form>
-              <form action={trade}>
-                <input type="hidden" name="symbol" value={symbol} />
-                <input type="hidden" name="side" value="sell" />
-                <input type="hidden" name="all" value="1" />
-                {entry ? <input type="hidden" name="entry_id" value={String(entry.id)} /> : null}
-                {entry ? <input type="hidden" name="tier" value={String(entry.tier)} /> : null}
-                <SubmitButton className="btn ghost block" pendingLabel="Selling…">
-                  Sell all {symbol}
-                </SubmitButton>
-              </form>
-            </section>
-          ) : null}
+        {canTrade ? (
+          <TradeControls
+            action={trade}
+            symbol={symbol}
+            price={Number(s.price)}
+            cash={limits.available}
+            maxShares={limits.maxShares}
+            held={held}
+            entryId={String(entry.id)}
+            tier={String(entry.tier)}
+          />
+        ) : (
+          <p className="trade-note trade-ticket-note">
+            {!entry ? (
+              <>
+                <Link href="/league">Join a league</Link> to buy {symbol}.
+              </>
+            ) : !entry.trading_open ? (
+              entry.not_started ? (
+                <>This league opens Monday at 7:00 AM ET. Come back then to buy {symbol}.</>
+              ) : (
+                <>
+                  Trading is closed for this league. <Link href="/league">Join the next one</Link>.
+                </>
+              )
+            ) : (
+              <>{symbol} has no price yet, so it can&apos;t be traded until the next price update.</>
+            )}
+          </p>
+        )}
+      </section>
 
-          {/* No pending orders — orders execute immediately now. */}
-        </aside>
-      </div>
+      {s.description || s.industry ? (
+        <section className="card trade-about">
+          <div className="card-head">
+            <h2>About {s.symbol}</h2>
+            {s.industry ? <span className="pill">{s.industry}</span> : null}
+          </div>
+          {s.description ? <p className="small muted trade-desc">{s.description}</p> : null}
+        </section>
+      ) : null}
 
       <p className="fineprint">
-        Orders execute immediately at the price shown, not queued for later — what you see is what you get.
-        {!marketOpen() ? ' The market is closed right now, so trading is disabled.' : ''}
+        Whole shares only. Buys and sells go through right away at the live price, so a tick between page loads moves
+        your total with it. Trading stays open all week — Monday 7:00 AM to Sunday 7:00 PM ET.
+        {!marketOpen() ? ' The market is closed right now, so the price holds at its last update.' : ''}
       </p>
     </main>
   );
